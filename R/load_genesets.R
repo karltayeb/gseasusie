@@ -101,10 +101,10 @@ tibble2namedlist <- function(tibble){
 # into named list of gene sets
 convertGeneSet <- function(gs, min.size = 100){
   gs$geneSet %>%
-    group_by(geneSet) %>%
-    filter(n() > min.size) %>%
-    select(gene) %>%
-    chop(gene) %>% ungroup() %>%
+    dplyr::group_by(geneSet) %>%
+    dplyr::filter(dplyr::n() > min.size) %>%
+    dplyr::select(gene) %>%
+    tidyr::chop(gene) %>% dplyr::ungroup() %>%
     tibble2namedlist
 }
 
