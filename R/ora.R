@@ -24,7 +24,7 @@ fit_ora = function(X, y){
   ora <- tibble(
       geneSet = colnames(X),
       geneListSize = sum(y),
-      geneSetSize = BiocGenerics::colSums(u$X),
+      geneSetSize = BiocGenerics::colSums(X),
       overlap = (y %*% X)[1,],
       nGenes = length(y),
       propInList = overlap / geneListSize,
@@ -34,8 +34,8 @@ fit_ora = function(X, y){
     ) %>%
     dplyr::rowwise() %>%
     dplyr::mutate(
-      pHypergeometric = do_hyper(overlap, geneListSize, geneSetSize, nGenes),
-      pFishersExact = do_fet(overlap, geneListSize, geneSetSize, nGenes)
+      pHypergeometric = compute_hypergeometric_pval(overlap, geneListSize, geneSetSize, nGenes),
+      pFishersExact = compute_fet_pval(overlap, geneListSize, geneSetSize, nGenes)
     ) %>%
     dplyr::ungroup()
     return(ora)
