@@ -161,29 +161,10 @@ do_ora = function(experiment,
                   genesets,
                   data,
                   .sign=c(1,-1)){
-
   gs <- genesets[[db]]
   dat <- data[[experiment]]
   u <- prep_binary_data(gs, dat, thresh, .sign)  # subset to common genes
-  
-  ora <- tibble(
-      geneSet = colnames(u$X),
-      geneListSize = sum(u$y),
-      geneSetSize = BiocGenerics::colSums(u$X),
-      overlap = (u$y %*% u$X)[1,],
-      nGenes = length(u$y),
-      propInList = overlap / geneListSize,
-      propInSet = overlap / geneSetSize,
-      oddsRatio = (overlap * (nGenes - geneSetSize - geneListSize + overlap)) /
-        ((geneListSize-overlap) * (geneSetSize - overlap))
-    ) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(
-      pHypergeometric = do_hyper(overlap, geneListSize, geneSetSize, nGenes),
-      pFishersExact = do_fet(overlap, geneListSize, geneSetSize, nGenes)
-    ) %>%
-    dplyr::ungroup()
-
+  ora <- fit_ora(u$X, u$y) 
   res = tibble(
     experiment=experiment,
     db=db,
