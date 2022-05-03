@@ -165,28 +165,7 @@ do_ora = function(experiment,
   gs <- genesets[[db]]
   dat <- data[[experiment]]
   u <- prep_binary_data(gs, dat, thresh, .sign)  # subset to common genes
-
-  do_fet = function(overlap, geneListSize, geneSetSize, nGenes){
-    ct <- matrix(c(
-      overlap,
-      geneListSize-overlap,
-      geneSetSize-overlap,
-      nGenes - geneSetSize - geneListSize + overlap), nr=2)
-    return(fisher.test(ct)$p.value)
-  }
-
-  do_hyper = function(overlap, geneListSize, geneSetSize, nGenes){
-    # genes in list = white balls, not in list = black balls
-    # draw k balls w/o replacement where k is the size of the gene set
-    # is the overlap we see with our gene set extreme/unlikely?
-    return(phyper(
-      max(0, overlap - 1),  # p(X >= overlap) = p(X > overlap - 1)
-      geneListSize,
-      nGenes - geneListSize,
-      geneSetSize,
-      lower.tail = FALSE))
-  }
-
+  
   ora <- tibble(
       geneSet = colnames(u$X),
       geneListSize = sum(u$y),
