@@ -1,0 +1,18 @@
+Package: gseareg
+Title: GSEA with Multiple Regression
+Version: 0.0.0.9000
+Authors@R: 
+    person("Karl", "Tayeb", , "karl.tayeb7@gmail.com", role = c("aut", "cre"))
+Description: Package of functions implimenting various itererations of GSEA with multiple regression.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+Imports:
+    modules (>= 0.10.0),
+    BiocGenerics (>= 0.40.0),
+    matrixStats (>= 0.61.0),
+    WebGestaltR (>= 0.4.4),
+    magrittr (>= 2.0.3),
+    susieR (>= 0.11.92)

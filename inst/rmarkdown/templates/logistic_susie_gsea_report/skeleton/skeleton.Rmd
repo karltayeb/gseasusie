@@ -1,0 +1,14 @@
+---
+title: "Untitled"
+author: "Karl Tayeb"
+date: !r Sys.Date()
+output:
+  workflowr::wflow_html:
+    code_folding: hide
+editor_options:
+  chunk_output_type: console
+params:
+  cache_dir: NULL 
+  genesets: c('kegg', 'gomf', 'gobp')
+  thresh: 1e-4
+---
