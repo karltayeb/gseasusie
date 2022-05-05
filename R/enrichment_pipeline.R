@@ -144,7 +144,7 @@ do_tccm_point_normal_susie = function(experiment,
   if(is.null(susie.args)){  # default SuSiE args
     susie.args = list(L=10, verbose=T, maxit=500)
   }
-  fit <- exec(tccm_point_normal_susie, u$beta, u$se, u$X, !!!susie.args)
+  fit <- exec(fit_tccm_point_normal_susie, u$beta, u$se, u$X, !!!susie.args)
   res = tibble(
     experiment=experiment,
     db=db,
