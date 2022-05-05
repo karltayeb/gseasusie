@@ -143,7 +143,7 @@ generate_h_susie = function(data, L=10) {
   update = function(responsibilities, params){
     params$dat$y <- responsibilities
     for(i in 1:1){
-      params <- logistic.susie.iteration(params)
+      params <- iter_logistic_susie(params)
     }
     return(params)
   }
@@ -167,7 +167,7 @@ generate_h_susie = function(data, L=10) {
   y.init <- as.integer(abs(data$beta / data$se) > 2)
 
   # TODO: expose more initialization options
-  params.init = logistic.susie(data$X, y.init, L=L, maxit=2)
+  params.init = fit_logistic_susie(data$X, y.init, L=L, maxit=2)
   h = list(
     update = update,
     get_prior_logits = get_prior_logits,
@@ -209,7 +209,7 @@ fit_tccm_point_normal_susie = function(beta, se, X, L=10, update.f1=TRUE, update
   f1 <- generate_f_normal()
   h <- generate_h_susie(data, L=L)
   res <- fit_tccm_ebnm(beta, se, X, f0, f1, h, update.f1=update.f1, update.h=update.h, maxit = maxit, verbose = verbose)
-  res$h$params <- logistic.susie.wrapup(res$h$params)
+  res$h$params <- wrapup_logistic_susie(res$h$params)
 
   # for compatability with susie functions...
   res$mu <- res$h$params$mu
