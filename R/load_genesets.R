@@ -87,6 +87,18 @@ load.gobp.X <- function(){
   X <- X[, (sizes > 5) & (sizes < 500)]
 }
 
+load_pathways_genesets <- function(){
+  X <- pathways::gene_sets_human$gene_sets
+  rownames(X) <- pathways::gene_sets_human$gene_info$GeneID
+  geneSetDes <- pathways::gene_sets_human$gene_set_info %>%
+    rename(
+      description = name,
+      geneSet = id
+    )
+  geneSet <- list(geneSetDes = geneSetDes)
+  res <- list(X=X, geneSet=geneSet, db='pathways', min.size=1)
+}
+
 
 # turn a tibble with two columns
 # into a named list with names from first column
@@ -118,7 +130,7 @@ geneSet2X <- function(gs){
   return(X)
 }
 
-loadGeneSetX = function(db, min.size=50){
+load_webgestalt_geneset_x = function(db, min.size=50){
   res <- xfun::cache_rds({
       gs <- load.webGestalt.geneSet(db)
       X <- gs %>% convertGeneSet(min.size=min.size) %>% geneSet2X
@@ -128,29 +140,59 @@ loadGeneSetX = function(db, min.size=50){
   return(res)
 }
 
-#' load a bunch of genesets
-#' @export
-load_gene_sets = function() {
-  # load genesets
-  gobp <- loadGeneSetX('geneontology_Biological_Process', min.size=50)  # just huge number of gene sets
-  gobp_nr <- loadGeneSetX('geneontology_Biological_Process_noRedundant', min.size=1)
-  gomf <- loadGeneSetX('geneontology_Molecular_Function', min.size=1)
-  gocc <- loadGeneSetX('geneontology_Cellular_Component', min.size=1)
-  kegg <- loadGeneSetX('pathway_KEGG', min.size=1)
-  reactome <- loadGeneSetX('pathway_Reactome', min.size=1)
-  wikipathway_cancer <- loadGeneSetX('pathway_Wikipathway_cancer', min.size=1)
-  wikipathway <- loadGeneSetX('pathway_Wikipathway', min.size=1)
+#' load MSigDB gene sets from `msigdbr` package
+#' @param db is the MSigDB category to fetch (C1, C2, ... C6)
+#' @param min.size remove gene sets smaller than this (default 10)
+load_msigdb_geneset_x <- function(db='C2', min.size=10){
+  res <- xfun::cache_rds({
+    msigdb.tb <- msigdbr::msigdbr(species="Homo sapiens", category = db)
+    geneSetDes <- msigdb.tb %>% select(gs_id, gs_cat, gs_subcat, gs_description)
+    gs <- msigdb.tb %>%
+      dplyr::select(gs_id, human_entrez_gene) %>%
+      dplyr::transmute(geneSet = gs_id, gene = human_entrez_gene) %>%
+      distinct() %>% list(geneSet = ., geneSetDes = geneSetDes)
+    X <- gs %>% convertGeneSet(min.size= min.size) %>% geneSet2X
+    list(geneSet = gs, X=X, db=db, min.size=min.size)
+  }, dir='cache/resources/', file=paste0(db, '.', min.size, '.X.rds'))
+  return(res)
+}
 
-  genesets <- list(
-    gobp=gobp,
-    gobp_nr=gobp_nr,
-    gomf=gomf,
-    gocc=gocc,
-    kegg=kegg,
-    reactome=reactome,
-    wikipathway_cancer=wikipathway_cancer,
-    wikipathway=wikipathway
+#' load gene sets from various sources with uniform format
+#' @export
+load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'pathways')) {
+  promise <- tibble::tribble(
+    ~name, ~expression,
+    'gobp', expr(load_webgestalt_geneset_x('geneontology_Biological_Process', min.size=50)),
+    'gobp_nr', expr(load_webgestalt_geneset_x('geneontology_Biological_Process_noRedundant', min.size=1)),
+    'gomf', expr(load_webgestalt_geneset_x('geneontology_Molecular_Function', min.size=1)),
+    'gocc', expr(load_webgestalt_geneset_x('geneontology_Cellular_Component', min.size=1)),
+    'kegg', expr(load_webgestalt_geneset_x('pathway_KEGG', min.size=1)),
+    'c1', expr(load_msigdb_geneset_x('C1', min.size=1)),
+    'c2', expr(load_msigdb_geneset_x('C2', min.size=1)),
+    'c3', expr(load_msigdb_geneset_x('C3', min.size=1)),
+    'c4', expr(load_msigdb_geneset_x('C4', min.size=1)),
+    'c5', expr(load_msigdb_geneset_x('C5', min.size=1)),
+    'c6', expr(load_msigdb_geneset_x('C6', min.size=1)),
+    'pathways', expr(load_pathways_genesets())
   )
+  genesets <-
+    promise %>%
+    filter(name %in% dbs) %>%
+    mutate(geneset = map(expression, eval)) %>%
+    select(name, geneset) %>%
+    tibble2namedlist()
+  return(genesets)
+}
+
+#' take a list of genesets and concatenate them
+concat_genesets = function(genesets){
+  # intersect/union of genes
+  all_genes <- map(genesets, ~ .x$X %>% rownames())
+  common_genes <- Reduce(intersect, all_genes)
+  union_genes <- unique(unlist(all_genes))
+
+  # subset and order (how to make this work for union?)
+  X_sub <- map(genesets, ~with(.x, X[rownames(X) %in% common_genes, ] %>% {.[order(rownames(.)),]}))
 
   return(genesets)
 }
