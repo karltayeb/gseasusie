@@ -165,12 +165,16 @@ do_ora = function(experiment,
   dat <- data[[experiment]]
   u <- prep_binary_data(gs, dat, thresh, .sign)  # subset to common genes
   ora <- fit_ora(u$X, u$y) 
+  # add description
+  ora <- ora %>%
+    dplyr::left_join(gs$geneSet$geneSetDes)
   res = tibble(
     experiment=experiment,
     db=db,
     thresh=thresh,
     ora=list(ora)
   )
+
   return(res)
 }
 
@@ -308,6 +312,7 @@ get_table_tbl = function(fits, ora){
 #' @param max_sets maximum number of gene sets to report for a single credible set
 #'    this is useful for large credible sets
 #' @return A styled kable table suitable for rendering in an HTML document
+#' @export
 report_susie_credible_sets = function(tbl,
                                       target_coverage=0.95,
                                       max_coverage=0.99,
@@ -318,12 +323,14 @@ report_susie_credible_sets = function(tbl,
     group_by(component) %>%
     arrange(component, desc(alpha)) %>%
     dplyr::filter(cumalpha <= max_coverage, alpha_rank <= max_sets) %>%
-    dplyr::mutate(in_cs = cumalpha <= target_coverage) %>% dplyr::ungroup()
+    dplyr::mutate(in_cs = cumalpha <= target_coverage) %>% 
+    dplyr::ungroup() %>%
+    dplyr::mutate(logOddsRatio = log10(oddsRatio))
 
   tbl_filtered %>%
-    dplyr::select(component, geneSet, description, alpha, beta, beta.se, pHypergeometric, pFishersExact, overlap, geneSetSize, oddsRatio) %>%
+    dplyr::select(component, geneSet, description, geneSetSize, overlap, logOddsRatio, beta, beta.se, alpha, pip, pFishersExact) %>%
     dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
     pack_group %>%
-    column_spec(c(4), color=ifelse(tbl_dplyr::filtered$beta >0, 'green', 'red')) %>%
+    column_spec(c(4), color=ifelse(tbl_filtered$beta > 0, 'green', 'red')) %>%
     kableExtra::kable_styling()
 }
