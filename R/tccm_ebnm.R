@@ -237,5 +237,6 @@ fit_tccm_point_normal = function(beta, se, X, logit=-1, update.f1=FALSE, update.
   res$sets <- res$h$params$sets
   res$pip <- res$h$params$pip
   res$intercept <- res$h$params$intercept
+  class('res') <- 'susie'
   return(res)
 }
