@@ -232,31 +232,6 @@ pack_group = function(tbl){
 }
 
 
-label_sig_enrichments = function(tbl){
-   tbl %>% dplyr::mutate(
-    padj = p.adjust(pFishersExact),
-    result = case_when(
-      padj < 0.05 & oddsRatio < 1 ~ 'depleted',
-      padj < 0.05 & oddsRatio > 1 ~ 'enriched',
-      TRUE ~ 'not significant'
-    )
-  )
-}
-
-do.volcano = function(res){
-  res %>%
-    label_sig_enrichments %>%
-    ggplot(aes(x=log10(oddsRatio), y=-log10(pFishersExact), color=result)) +
-    geom_point() +
-    geom_point(
-      res %>% dplyr::filter(in_cs, active_cs),
-      mapping=aes(x=log10(oddsRatio), y=-log10(pFishersExact)),
-      color='black', pch=21, size=5) +
-    scale_color_manual(values = c('depleted' = 'coral',
-                                  'enriched' = 'dodgerblue',
-                                  'not significant' = 'grey'))
-}
-
 
 # take credible set summary, return "best" row for each gene set
 get_cs_summary_condensed = function(fit){
