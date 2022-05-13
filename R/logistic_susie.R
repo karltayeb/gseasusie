@@ -84,11 +84,8 @@ update_xi = function(dat, Sigma2, Mu, Alpha, Z, delta) {
   # delta is current estimate for effects of Z variables
 
   Q = calc_Q(dat, Sigma2, Mu, Alpha, Z, delta)
-
   xi = sqrt(Q)
-
   return(xi)
-
 }
 
 
@@ -374,6 +371,11 @@ calc_ELBO = function(dat, post_info){
   return(ELBO)
 }
 
+#' compute the relative difference (to check convergence by ELBO)
+rel_diff = function(v) {
+  diff(v) / max(abs(v))
+}
+
 #' Fit logistic SuSiE with variational inference
 #'
 #' This is a driver function for logistic SuSiE (Sum of Single Effects Regression)
@@ -412,10 +414,11 @@ fit_logistic_susie = function(
     pb$tick(0)
   }
   converged <- FALSE
+
   for (i in 1:maxit){
     if(verbose>0){pb$tick()}
     res <- iter_logistic_susie(res)
-    if(diff(tail(res$elbo, 2)) < tol){
+    if(rel_diff(tail(res$elbo, 2)) < tol){
       converged <- TRUE
       if(verbose){message('\nconverged')}
       break
