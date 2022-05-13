@@ -143,6 +143,7 @@ load_webgestalt_geneset_x = function(db, min.size=50){
 #' load MSigDB gene sets from `msigdbr` package
 #' @param db is the MSigDB category to fetch (C1, C2, ... C6)
 #' @param min.size remove gene sets smaller than this (default 10)
+#' @export
 load_msigdb_geneset_x <- function(db='C2', min.size=10){
   res <- xfun::cache_rds({
     msigdb.tb <- msigdbr::msigdbr(species="Homo sapiens", category = db)
@@ -162,24 +163,24 @@ load_msigdb_geneset_x <- function(db='C2', min.size=10){
 load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'pathways')) {
   promise <- tibble::tribble(
     ~name, ~expression,
-    'gobp', expr(load_webgestalt_geneset_x('geneontology_Biological_Process', min.size=50)),
-    'gobp_nr', expr(load_webgestalt_geneset_x('geneontology_Biological_Process_noRedundant', min.size=1)),
-    'gomf', expr(load_webgestalt_geneset_x('geneontology_Molecular_Function', min.size=1)),
-    'gocc', expr(load_webgestalt_geneset_x('geneontology_Cellular_Component', min.size=1)),
-    'kegg', expr(load_webgestalt_geneset_x('pathway_KEGG', min.size=1)),
-    'c1', expr(load_msigdb_geneset_x('C1', min.size=1)),
-    'c2', expr(load_msigdb_geneset_x('C2', min.size=1)),
-    'c3', expr(load_msigdb_geneset_x('C3', min.size=1)),
-    'c4', expr(load_msigdb_geneset_x('C4', min.size=1)),
-    'c5', expr(load_msigdb_geneset_x('C5', min.size=1)),
-    'c6', expr(load_msigdb_geneset_x('C6', min.size=1)),
-    'pathways', expr(load_pathways_genesets())
+    'gobp', rlang::expr(load_webgestalt_geneset_x('geneontology_Biological_Process', min.size=50)),
+    'gobp_nr', rlang::expr(load_webgestalt_geneset_x('geneontology_Biological_Process_noRedundant', min.size=1)),
+    'gomf', rlang::expr(load_webgestalt_geneset_x('geneontology_Molecular_Function', min.size=1)),
+    'gocc', rlang::expr(load_webgestalt_geneset_x('geneontology_Cellular_Component', min.size=1)),
+    'kegg', rlang::expr(load_webgestalt_geneset_x('pathway_KEGG', min.size=1)),
+    'c1', rlang::expr(load_msigdb_geneset_x('C1', min.size=1)),
+    'c2', rlang::expr(load_msigdb_geneset_x('C2', min.size=1)),
+    'c3', rlang::expr(load_msigdb_geneset_x('C3', min.size=1)),
+    'c4', rlang::expr(load_msigdb_geneset_x('C4', min.size=1)),
+    'c5', rlang::expr(load_msigdb_geneset_x('C5', min.size=1)),
+    'c6', rlang::expr(load_msigdb_geneset_x('C6', min.size=1)),
+    'pathways', rlang::expr(load_pathways_genesets())
   )
   genesets <-
     promise %>%
-    filter(name %in% dbs) %>%
-    mutate(geneset = map(expression, eval)) %>%
-    select(name, geneset) %>%
+    dplyr::filter(name %in% dbs) %>%
+    dplyr::mutate(geneset = purrr::map(expression, eval)) %>%
+    dplyr::select(name, geneset) %>%
     tibble2namedlist()
   return(genesets)
 }
