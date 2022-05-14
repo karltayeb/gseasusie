@@ -147,11 +147,13 @@ load_webgestalt_geneset_x = function(db, min.size=50){
 load_msigdb_geneset_x <- function(db='C2', min.size=10){
   res <- xfun::cache_rds({
     msigdb.tb <- msigdbr::msigdbr(species="Homo sapiens", category = db)
-    geneSetDes <- msigdb.tb %>% select(gs_id, gs_cat, gs_subcat, gs_description)
+    geneSetDes <- msigdb.tb %>% 
+      dplyr::select(gs_id, gs_cat, gs_subcat, gs_description)
     gs <- msigdb.tb %>%
       dplyr::select(gs_id, human_entrez_gene) %>%
       dplyr::transmute(geneSet = gs_id, gene = human_entrez_gene) %>%
-      distinct() %>% list(geneSet = ., geneSetDes = geneSetDes)
+      dplyr::distinct() %>%
+      list(geneSet = ., geneSetDes = geneSetDes)
     X <- gs %>% convertGeneSet(min.size= min.size) %>% geneSet2X
     list(geneSet = gs, X=X, db=db, min.size=min.size)
   }, dir='cache/resources/', file=paste0(db, '.', min.size, '.X.rds'))
