@@ -244,7 +244,7 @@ get_cs_summary_condensed = function(fit){
 # generate table for making gene-set plots
 get_plot_tbl = function(fits, ora){
   res <- fits %>%
-    left_join(ora) %>%
+    dplyr::left_join(ora) %>%
     dplyr::mutate(
       gs_summary = map(fit, get_gene_set_summary),
       cs_summary = map(fit, get_cs_summary_condensed),
@@ -252,7 +252,7 @@ get_plot_tbl = function(fits, ora){
       res = map2(res, ora, ~ possibly(left_join, NULL)(.x, .y))
     ) %>%
     dplyr::select(-c(fit, susie.args, ora, gs_summary, cs_summary)) %>%
-    unnest(res)
+    tidyr::unnest(res)
   return(res)
 }
 
@@ -264,18 +264,18 @@ split_tibble = function(tibble, col = 'col'){
 # Get summary of credible sets with gene set descriptions
 get_table_tbl = function(fits, ora){
   res2 <- fits %>%
-    left_join(ora) %>%
+    dplyr::left_join(ora) %>%
     dplyr::mutate(res = map(fit, get_credible_set_summary)) %>%
     dplyr::mutate(res = map2(res, ora, ~ left_join(.x, .y))) %>%
     dplyr::select(-c(fit, ora)) %>%
-    unnest(res)
+    tidyr::unnest(res)
 
-  descriptions <- map_dfr(genesets, ~pluck(.x, 'geneSet', 'geneSetDes'))
+  descriptions <- purrr::map_dfr(genesets, ~purrr::pluck(.x, 'geneSet', 'geneSetDes'))
   tbl <- res2 %>%
     dplyr::filter(active_cs) %>%
-    left_join(descriptions)
+    dplyr::left_join(descriptions)
   tbl_split <- split_tibble(tbl, 'experiment')
-  html_tables <- map(tbl_split, ~split_tibble(.x, 'db'))
+  html_tables <- purrr::map(tbl_split, ~split_tibble(.x, 'db'))
   return(html_tables)
 }
 
