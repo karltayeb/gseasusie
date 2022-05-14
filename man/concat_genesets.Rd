@@ -4,7 +4,14 @@
 \alias{concat_genesets}
 \title{take a list of genesets and concatenate them}
 \usage{
-concat_genesets(genesets)
+concat_genesets(genesets, min.size, name)
+}
+\arguments{
+\item{genesets}{a list of gene sets like the output from load_gene_sets}
+
+\item{min.size}{minimum size of gene set for inclusion}
+
+\item{name}{a name for this geneset (it get's cached for fast loading in the future)}
 }
 \description{
 take a list of genesets and concatenate them
