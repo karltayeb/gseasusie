@@ -91,7 +91,7 @@ load_pathways_genesets <- function(){
   X <- pathways::gene_sets_human$gene_sets
   rownames(X) <- pathways::gene_sets_human$gene_info$GeneID
   geneSetDes <- pathways::gene_sets_human$gene_set_info %>%
-    rename(
+    dplyr::rename(
       description = name,
       geneSet = id
     )
@@ -163,20 +163,21 @@ load_msigdb_geneset_x <- function(db='C2', min.size=10){
 #' load gene sets from various sources with uniform format
 #' @export
 load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'pathways')) {
+  load_pathways_genesets <- load_pathways_genesets
   promise <- tibble::tribble(
     ~name, ~expression,
-    'gobp', rlang::expr(load_webgestalt_geneset_x('geneontology_Biological_Process', min.size=50)),
-    'gobp_nr', rlang::expr(load_webgestalt_geneset_x('geneontology_Biological_Process_noRedundant', min.size=1)),
-    'gomf', rlang::expr(load_webgestalt_geneset_x('geneontology_Molecular_Function', min.size=1)),
-    'gocc', rlang::expr(load_webgestalt_geneset_x('geneontology_Cellular_Component', min.size=1)),
-    'kegg', rlang::expr(load_webgestalt_geneset_x('pathway_KEGG', min.size=1)),
-    'c1', rlang::expr(load_msigdb_geneset_x('C1', min.size=1)),
-    'c2', rlang::expr(load_msigdb_geneset_x('C2', min.size=1)),
-    'c3', rlang::expr(load_msigdb_geneset_x('C3', min.size=1)),
-    'c4', rlang::expr(load_msigdb_geneset_x('C4', min.size=1)),
-    'c5', rlang::expr(load_msigdb_geneset_x('C5', min.size=1)),
-    'c6', rlang::expr(load_msigdb_geneset_x('C6', min.size=1)),
-    'pathways', rlang::expr(load_pathways_genesets())
+    'gobp', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Biological_Process', min.size=50)),
+    'gobp_nr', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Biological_Process_noRedundant', min.size=1)),
+    'gomf', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Molecular_Function', min.size=1)),
+    'gocc', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Cellular_Component', min.size=1)),
+    'kegg', rlang::expr(gseareg:::load_webgestalt_geneset_x('pathway_KEGG', min.size=1)),
+    'c1', rlang::expr(gseareg:::load_msigdb_geneset_x('C1', min.size=1)),
+    'c2', rlang::expr(gseareg:::load_msigdb_geneset_x('C2', min.size=1)),
+    'c3', rlang::expr(gseareg:::load_msigdb_geneset_x('C3', min.size=1)),
+    'c4', rlang::expr(gseareg:::load_msigdb_geneset_x('C4', min.size=1)),
+    'c5', rlang::expr(gseareg:::load_msigdb_geneset_x('C5', min.size=1)),
+    'c6', rlang::expr(gseareg:::load_msigdb_geneset_x('C6', min.size=1)),
+    'pathways', rlang::expr(gseareg:::load_pathways_genesets())
   )
   genesets <-
     promise %>%
