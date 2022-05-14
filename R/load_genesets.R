@@ -186,6 +186,7 @@ load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5',
 }
 
 #' take a list of genesets and concatenate them
+#' @export
 concat_genesets = function(genesets){
   # intersect/union of genes
   all_genes <- map(genesets, ~ .x$X %>% rownames())

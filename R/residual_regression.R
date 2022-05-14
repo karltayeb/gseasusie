@@ -44,6 +44,7 @@ fit_residual_regression = function(X, y, fit){
 #' fit marginal regression to each geneset
 #' @param X an n x p gene set matrix (genes x gene sets)
 #' @param y a binary response vector (length n)
+#' @export
 fit_marginal_regression = function(X, y){
   p <- dim(X)[2]
   message('fitting marginal logistic regression')
