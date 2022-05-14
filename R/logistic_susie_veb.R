@@ -14,7 +14,8 @@ fit_logistic_susie_veb_boost = function(X, y, L=10, ...){
 
     alpha <- t(do.call(cbind, lapply(veb.fit$leaves, function(x) x$learner$currentFit$alpha)))
     mu <- t(do.call(cbind, lapply(veb.fit$leaves, function(x) x$learner$currentFit$mu)))
-    mu2 <- t(do.call(cbind, lapply(veb.fit$leaves, function(x) x$learner$currentFit$mu2)))
+    mu2 <- t(do.call(cbind, lapply(veb.fit$leaves, function(x) x$learner$currentFit$sigma2_post)))
+    mu2 <- mu2 + mu^2
     elbo <- veb.fit$ELBO_progress[[2]]
     res <- list(alpha=alpha, mu=mu, mu2=mu2, elbo=elbo, veb.fit=veb.fit)
     class(res) <- 'susie'
