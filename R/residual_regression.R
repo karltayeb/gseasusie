@@ -56,3 +56,54 @@ fit_marginal_regression = function(X, y){
   colnames(res) <- c('marginal_beta', 'marginal_se', 'marginal_z', 'marginal_p', 'geneSet')
   return(res)
 }
+
+.fit_univariate_regression_jax = function(X, y, offset=0){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+  basilisk::basiliskRun(
+    proc, function(X, y, offset) {
+      np <- reticulate::import("numpy")
+      reticulate::source_python(system.file("python", "logistic_regression.py", package = "gseasusie"))
+      mpy <- logistic_regression_jax(X, np$array(y), np$array(offset))
+      mpy <- mpy %>% 
+        tibble::as_tibble() %>%
+        dplyr::mutate(geneSet = colnames(X)) %>%
+        dplyr::mutate(pval = dplyr::if_else(is.finite(effect), pval, 1.)) %>%
+        dplyr::select(geneSet, effect, effect_se, intercept, intercept_se, loglik, lrts, pval)
+      mpy
+    }, X=X, y=y, offset=offset
+  )
+}
+
+#' @export
+fit_marginal_regression_jax = function(X, y, stride=1000){
+  p = dim(X)[2]
+  start_idx = seq(1, p, stride)
+  end_idx = pmin(start_idx + stride - 1, p)
+
+  message('fitting marginal logistic regressions...')
+  tictoc::tic()
+  mpy <- purrr::map_dfr(
+    1:length(start_idx), ~.fit_univariate_regression_jax(
+      X[, start_idx[.x]:end_idx[.x]], y, offset=0)
+  )
+  tictoc::toc()
+  return(mpy)
+}
+
+#' @export
+fit_residual_regression_jax = function(X, y, fit, stride=1000){
+  p = dim(X)[2]
+  start_idx = seq(1, p, stride)
+  end_idx = pmin(start_idx + stride - 1, p)
+  offset <- fit$veb.fit$mu1
+
+  message('fitting residual logistic regressions...')
+  tictoc::tic()
+  mpy <- purrr::map_dfr(
+    1:length(start_idx), ~.fit_univariate_regression_jax(
+      X[, start_idx[.x]:end_idx[.x]], y, offset)
+  )
+  tictoc::toc()
+  return(mpy)
+}
