@@ -21,6 +21,8 @@ return(phyper(
 
 #' @export
 fit_ora = function(X, y){
+  message('computin ORA statistics...')
+  tictoc::tic()
   ora <- tibble(
       geneSet = colnames(X),
       geneListSize = sum(y),
@@ -38,5 +40,7 @@ fit_ora = function(X, y){
       pFishersExact = compute_fet_pval(overlap, geneListSize, geneSetSize, nGenes)
     ) %>%
     dplyr::ungroup()
-    return(ora)
+  
+  tictoc::toc()
+  return(ora)
 }
