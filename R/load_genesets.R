@@ -1,38 +1,65 @@
-make.gene.set <- function(X){
+#' convert geneSet tibble to matrix
+geneSet2X <- function(gs){
+  unique.genes <- unique(unlist(gs))
+  X <- purrr::map(gs, ~ Matrix::Matrix(unique.genes %in% .x %>% as.integer, sparse = T)) %>%
+    Reduce(cbind2, .) %>%
+    `rownames<-`(unique.genes) %>%
+    `colnames<-`(names(gs))
+  return(X)
+}
+
+#' convert gene set matrix to geneSet tibble
+X2geneSet = function(X){
   referenceGene <- rownames(X)
   geneSets <- colnames(X)
-  a <- which(X!=0, arr.ind = T)
+  a <- BiocGenerics::which(X!=0, arr.ind = T)
   geneSet <- cbind(referenceGene[a[,1]], geneSets[a[,2]])
   colnames(geneSet) <- c('gene', 'geneSet')
-  geneSet <- as_tibble(geneSet)
+  geneSet <- tibble::as_tibble(geneSet)
   return(geneSet)
 }
 
-make.gene.set.matrix <- function(geneSet){
-  X <- geneSet %>%
-    dplyr::mutate(in_geneSet = 1) %>%
-    dplyr::select(geneSet, in_geneSet, gene) %>%
-    tidyr::pivot_wider(names_from = geneSet, values_from = in_geneSet) %>%
-    dplyr::mutate_at(dplyr::vars(-gene), ~tidyr::replace_na(.x, 0))
-
-  backgroundGene <- X$gene
-  X_mat <- as.matrix(X[,-1])
-  rownames(X_mat) <- X$gene
-  return(Matrix::Matrix(X_mat, sparse = T))
+# turn a tibble with two columns
+# into a named list with names from first column
+# values from second column
+tibble2namedlist <- function(tibble){
+  x <- tibble[[2]]
+  names(x) <- tibble[[1]]
+  return(x)
 }
 
-load.msigdb.X <- function(){
-  msigdb.tb <- msigdbr::msigdbr(species="Homo sapiens", category = c("C2"))
-
-  msigdb.geneSet <- msigdb.tb %>%
-    dplyr::select(gs_id, human_entrez_gene) %>%
-    dplyr::transmute(geneSet = gs_id, gene = human_entrez_gene)
-
-  X <- make.gene.set.matrix(msigdb.geneSet)
-  X <- X[, sample(colnames(X), 500)]
-  X <- X[Matrix::rowSums(X) > 0, ]
+#' convert a geneSet tibble into a list of gene sets
+#' 
+#' @param gs a tibble with two at least two columns: geneSet and gene
+#' @param min.size the minimum size to retain a gene set
+#' returns a named list mapping gene sets to genes
+convertGeneSet <- function(geneSet, min.size = 100){
+  geneSet %>%
+    dplyr::group_by(geneSet) %>%
+    dplyr::filter(dplyr::n() >= min.size) %>%
+    dplyr::select(gene) %>%
+    tidyr::chop(gene) %>% dplyr::ungroup() %>%
+    tibble2namedlist
 }
 
+
+#' wrapper for loading geneSets from peters `pathways` package
+load_pathways_genesets <- function(){
+  X <- pathways::gene_sets_human$gene_sets
+  rownames(X) <- pathways::gene_sets_human$gene_info$GeneID
+  geneSetDes <- pathways::gene_sets_human$gene_set_info %>%
+    dplyr::rename(
+      description = name,
+      geneSet = id
+    )
+
+  geneSet <- X2geneSet(X)
+  geneSet <- list(geneSetDes = geneSetDes)
+  res <- list(X=X, geneSet=geneSet, db='pathways', min.size=1)
+  res <- list(X=X, geneSet=geneSet, geneSetDes=geneSetDes, db='pathways', min.size=1)
+}
+
+#' wrapper for webGestatlR geneSet loading
 load.webGestalt.geneSet <- function(db='geneontology_Biological_Process_noRedundant'){
   organism <- 'hsapiens'
   interestGeneType = "ensembl_gene_id"
@@ -46,118 +73,77 @@ load.webGestalt.geneSet <- function(db='geneontology_Biological_Process_noRedund
   return(geneSet)
 }
 
-load.webGestalt.X <- function(db='geneontology_Biological_Process_noRedundant'){
-  organism <- 'hsapiens'
-  interestGeneType = "ensembl_gene_id"
-  referenceGeneType = "ensembl_gene_id"
-  outputDirectory = './data/WebGestalt/results'
-  hostName = 'http://www.webgestalt.org/'
-
-  enrichDatabase <- c(db)
-  geneSet <- WebGestaltR::loadGeneSet(
-    organism=organism, enrichDatabase=enrichDatabase, hostName=hostName)$geneSet
-
-  X <- make.gene.set.matrix(geneSet)
-  return(X)
-}
-
-load.gonr.geneSet <- function(){
-  load.webGestalt.geneSet()
-}
-
-load.gobp.geneSet <- function(){
-  load.webGestalt.geneSet()
-}
-
-load.gobp.X <- function(){
-  X <- load.webGestalt.X(db='geneontology_Biological_Process')
-  sizes <- Matrix::colSums(X)
-  X <- X[, (sizes > 5) & (sizes < 500)]
-}
-
-load.gonr.X <- function(){
-  X <- load.webGestalt.X()
-  sizes <- Matrix::colSums(X)
-  X <- X[, (sizes > 5) & (sizes < 500)]
-}
-
-load.gobp.X <- function(){
-  X <- load.webGestalt.X(db='geneontology_Biological_Process')
-  sizes <- Matrix::colSums(X)
-  X <- X[, (sizes > 5) & (sizes < 500)]
-}
-
-load_pathways_genesets <- function(){
-  X <- pathways::gene_sets_human$gene_sets
-  rownames(X) <- pathways::gene_sets_human$gene_info$GeneID
-  geneSetDes <- pathways::gene_sets_human$gene_set_info %>%
-    dplyr::rename(
-      description = name,
-      geneSet = id
-    )
-  geneSet <- list(geneSetDes = geneSetDes)
-  res <- list(X=X, geneSet=geneSet, db='pathways', min.size=1)
-}
-
-
-# turn a tibble with two columns
-# into a named list with names from first column
-# values from second column
-tibble2namedlist <- function(tibble){
-  x <- tibble[[2]]
-  names(x) <- tibble[[1]]
-  return(x)
-}
-
-# turn webgestalt geneSet object
-# into named list of gene sets
-convertGeneSet <- function(gs, min.size = 100){
-  gs$geneSet %>%
-    dplyr::group_by(geneSet) %>%
-    dplyr::filter(dplyr::n() > min.size) %>%
-    dplyr::select(gene) %>%
-    tidyr::chop(gene) %>% dplyr::ungroup() %>%
-    tibble2namedlist
-}
-
-# convert list of gene sets into binary indicator matrix
-geneSet2X <- function(gs){
-  unique.genes <- unique(unlist(gs))
-  X <- purrr::map(gs, ~ Matrix::Matrix(unique.genes %in% .x %>% as.integer, sparse = T)) %>%
-    Reduce(cbind2, .) %>%
-    `rownames<-`(unique.genes) %>%
-    `colnames<-`(names(gs))
-  return(X)
-}
-
-load_webgestalt_geneset_x = function(db, min.size=50){
+#' formate WebGestaltR geneSets to standardized format
+load_webgestalt_geneset_x = function(db, min.size=10){ 
+  message(paste0('loading gene set from webgestaltr: ', db))
   res <- xfun::cache_rds({
       gs <- load.webGestalt.geneSet(db)
-      X <- gs %>% convertGeneSet(min.size=min.size) %>% geneSet2X
-      list(geneSet = gs, X=X, db=db, min.size=min.size)
+      X <- gs$geneSet %>% convertGeneSet(min.size=min.size) %>% geneSet2X
+      list(X=X, geneSet=gs$geneSet, geneSetDes=gs$geneSetDes, db=db, min.size=min.size)
     }, dir='cache/resources/', file=paste0(db, '.', min.size, '.X.rds')
   )
   return(res)
 }
 
-#' load MSigDB gene sets from `msigdbr` package
+#' load MSigDB gene sets from `msigdbr` package in standardized format
 #' @param db is the MSigDB category to fetch (C1, C2, ... C6)
 #' @param min.size remove gene sets smaller than this (default 10)
 #' @export
 load_msigdb_geneset_x <- function(db='C2', min.size=10){
+  message(paste0('loading gene set from msigdbr: ', db))
   res <- xfun::cache_rds({
     msigdb.tb <- msigdbr::msigdbr(species="Homo sapiens", category = db)
     geneSetDes <- msigdb.tb %>% 
-      dplyr::select(gs_id, gs_cat, gs_subcat, gs_description)
+      dplyr::select(gs_id, gs_cat, gs_subcat, gs_description) %>%
+      dplyr::distinct() %>%
+      dplyr::rename(geneSet=gs_id, description=gs_description)
     gs <- msigdb.tb %>%
       dplyr::select(gs_id, human_entrez_gene) %>%
       dplyr::transmute(geneSet = gs_id, gene = human_entrez_gene) %>%
+      dplyr::mutate(gene = as.character(gene)) %>%
       dplyr::distinct() %>%
       list(geneSet = ., geneSetDes = geneSetDes)
-    X <- gs %>% convertGeneSet(min.size= min.size) %>% geneSet2X
-    list(geneSet = gs, X=X, db=db, min.size=min.size)
+    X <- gs$geneSet %>% convertGeneSet(min.size= min.size) %>% geneSet2X
+    list(X=X, geneSet=gs$geneSet, geneSetDes=gs$geneSetDes, db=db, min.size=min.size)
   }, dir='cache/resources/', file=paste0(db, '.', min.size, '.X.rds'))
   return(res)
+}
+
+#' take a list of genesets and concatenate them
+#' @param genesets a list of gene sets like the output from load_gene_sets
+#' @param min.size minimum size of gene set for inclusion
+#' @param name a name for this geneset (it get's cached for fast loading in the future)
+#' @export
+concat_genesets = function(genesets, min.size, name){
+  res <- xfun::cache_rds({
+    geneSet <- purrr::map_dfr(genesets, ~purrr::pluck(.x, 'geneSet')) %>%
+      dplyr::select(geneSet, gene) %>%
+      dplyr::distinct()
+    geneSetDes <- purrr::map_dfr(genesets, ~purrr::pluck(.x, 'geneSetDes')) %>%
+      dplyr::select(geneSet, description) %>%
+      dplyr::distinct()
+    X <- geneSet %>% convertGeneSet(min.size= min.size) %>% geneSet2X
+    list(X=X, geneSet=geneSet, geneSetDes=geneSetDes, db=name, min.size=min.size)
+  }, dir='cache/resources/', file=paste0(name, '.', min.size, '.X.rds'))
+  return(res)
+}
+
+#' convenient function to load MSigDb C1-6
+#' @param min.size minimum number of genes in term
+#' @export
+load_all_msigdb = function(min.size=10){
+  genesets <- load_gene_sets(c('c1', 'c2', 'c3', 'c4', 'c5', 'c6'))
+  gs <- concat_genesets(genesets, min.size, 'all_msigdb')
+  return(gs)
+}
+
+#' convenient function to load all GO terms (across ontologies BP, MF, CC)
+#' @param min.size minimum number of genes in term (default 10)
+#' @export
+load_all_go = function(min.size=10){
+  genesets <- gseareg::load_gene_sets(c('gobp', 'gomf', 'gocc'))
+  go.gs <- concat_genesets(genesets, min.size, 'all_go')
+  return(go.gs)
 }
 
 #' load gene sets from various sources with uniform format
@@ -165,8 +151,8 @@ load_msigdb_geneset_x <- function(db='C2', min.size=10){
 load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'pathways')) {
   promise <- tibble::tribble(
     ~name, ~expression,
-    'gobp', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Biological_Process', min.size=50)),
     'gobp_nr', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Biological_Process_noRedundant', min.size=1)),
+    'gobp', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Biological_Process', min.size=1)),
     'gomf', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Molecular_Function', min.size=1)),
     'gocc', rlang::expr(gseareg:::load_webgestalt_geneset_x('geneontology_Cellular_Component', min.size=1)),
     'kegg', rlang::expr(gseareg:::load_webgestalt_geneset_x('pathway_KEGG', min.size=1)),
@@ -187,38 +173,4 @@ load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5',
     dplyr::select(name, geneset) %>%
     tibble2namedlist()
   return(genesets)
-}
-
-#' take a list of genesets and concatenate them
-#' @param genesets a list of gene sets like the output from load_gene_sets
-#' @param min.size minimum size of gene set for inclusion
-#' @param name a name for this geneset (it get's cached for fast loading in the future)
-#' @export
-concat_genesets = function(genesets, min.size, name){
-  res <- xfun::cache_rds({
-    geneSet <- purrr::map_dfr(genesets, ~purrr::pluck(.x, 'geneSet', 'geneSet')) %>% dplyr::distinct()
-    geneSetDes <- purrr::map_dfr(genesets, ~purrr::pluck(.x, 'geneSet', 'geneSetDes')) %>% dplyr::distinct()
-    gs = list(geneSet = geneSet, geneSetDes = geneSetDes)
-    X <- gs %>% convertGeneSet(min.size= min.size) %>% geneSet2X
-    list(geneSet = gs, X=X, db=name, min.size=min.size)
-  }, dir='cache/resources/', file=paste0(name, '.', min.size, '.X.rds'))
-  return(res)
-}
-
-#' convenient function to load MSigDb C1-6
-#' @param min.size minimum number of genes in term
-#' @export
-load_all_msigdb = function(min.size=10){
-  genesets <- load_gene_sets(c('c1', 'c2', 'c3', 'c4', 'c5', 'c6'))
-  gs <- concat_genesets(genesets, min.size, 'all_msigdb')
-  return(gs)
-}
-
-#' convenient function to load all GO terms (across ontologies BP, MF, CC)
-#' @param min.size minimum number of genes in term
-#' @export
-load_all_go = function(min.size=10){
-genesets <- gseareg::load_gene_sets(c('gobp', 'gomf', 'gocc'))
-go.gs <- concat_genesets(genesets, min.size, 'all_go')
-  return(gs)
 }
