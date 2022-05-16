@@ -15,10 +15,10 @@ label_sig_enrichments = function(tbl){
 #' @param ora output from `fit_ora`
 #' @export
 enrichment_volcano = function(fit, ora){
-  res <- gseareg::get_gene_set_summary(fit) %>%
+  res <- get_gene_set_summary(fit) %>%
     dplyr::left_join(ora)
   
-  csdat <- gseareg::get_credible_set_summary(fit) %>%
+  csdat <- get_credible_set_summary(fit) %>%
     dplyr::left_join(ora) %>%
     dplyr::filter(in_cs, active_cs)
   
@@ -30,9 +30,6 @@ enrichment_volcano = function(fit, ora){
       csdat, 
       mapping=aes(x=log10(oddsRatio), y=-log10(pFishersExact), fill=component),
       color='black', pch=21, size=5) +
-    ggplot2::geom_text(
-      csdat, 
-      mapping=aes(x=log10(oddsRatio), y=-log10(pFishersExact), fill=component, label=geneSet)) +
     ggplot2::scale_color_manual(values = c('depleted' = 'coral',
                                            'enriched' = 'dodgerblue',
                                            'not significant' = 'grey'))
