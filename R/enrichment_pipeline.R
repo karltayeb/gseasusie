@@ -4,10 +4,26 @@
 #' @param dat a vector of statistics to threshold hold,
 #'    names must match columns of `X`
 #' @param threshold to binarize `dat`
+#' @param ptop proportion of genes to include in gene list, if not NULL, overrides thresh
+#' @param .sign either `c(1, -1)`, 1, or -1, to indicate including both, positive, or negative betas
 #' @export
-prep_binary_data = function(gs, dat, thresh, .sign=c(1, -1)) {
+prep_binary_data = function(gs, dat, thresh=1e-2, ptop=NULL, .sign=c(1, -1)) {
   # get common genes as background
   gs.genes <- rownames(gs$X)
+
+  # dplyr::filter gene sets
+  dat <- dat %>% filter(!is.na(threshold.on))
+  y.genes <- dat$ENTREZID 
+  test.genes <- intersect(gs.genes, y.genes)
+  X <- gs$X[test.genes,]
+  bad.cols <- BiocGenerics::colSums(X)
+  bad.cols <- (bad.cols == 0) | bad.cols == length(test.genes)
+  X <- X[, which(!bad.cols)]
+
+  dat <- dat %>% filter(ENTREZID %in% test.genes)
+  if (!is.null(ptop)){
+    thresh <- quantile(dat$threshold.on, ptop, na.rm=TRUE)
+  }
 
   # dplyr::filter gene list
   y <- dat %>%
@@ -17,14 +33,6 @@ prep_binary_data = function(gs, dat, thresh, .sign=c(1, -1)) {
     dplyr::select(ENTREZID, geneList) %>%
     dplyr::distinct(across(ENTREZID), .keep_all = T) %>%
     tibble2namedlist()
-
-  # dplyr::filter gene sets
-  y.genes <- names(y)
-  test.genes <- intersect(gs.genes, y.genes)
-  X <- gs$X[test.genes,]
-  bad.cols <- BiocGenerics::colSums(X)
-  bad.cols <- (bad.cols == 0) | bad.cols == length(test.genes)
-  X <- X[, which(!bad.cols)]
 
   # reorder genes in y to match X order
   y <- y[rownames(X)]
