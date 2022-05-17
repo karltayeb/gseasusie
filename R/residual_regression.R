@@ -57,9 +57,7 @@ fit_marginal_regression = function(X, y){
   return(res)
 }
 
-.fit_univariate_regression_jax = function(X, y, offset=0){
-  proc <- basilisk::basiliskStart(jax_env)
-  on.exit(basilisk::basiliskStop(proc))
+.fit_univariate_regression_jax = function(X, y, offset=0, proc){
   basilisk::basiliskRun(
     proc, function(X, y, offset) {
       np <- reticulate::import("numpy")
@@ -77,6 +75,9 @@ fit_marginal_regression = function(X, y){
 
 #' @export
 fit_marginal_regression_jax = function(X, y, stride=1000){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
   p = dim(X)[2]
   start_idx = seq(1, p, stride)
   end_idx = pmin(start_idx + stride - 1, p)
@@ -85,7 +86,7 @@ fit_marginal_regression_jax = function(X, y, stride=1000){
   tictoc::tic()
   mpy <- purrr::map_dfr(
     1:length(start_idx), ~.fit_univariate_regression_jax(
-      X[, start_idx[.x]:end_idx[.x]], y, offset=0)
+      X[, start_idx[.x]:end_idx[.x]], y, offset=0, proc)
   )
   tictoc::toc()
   return(mpy)
@@ -93,6 +94,9 @@ fit_marginal_regression_jax = function(X, y, stride=1000){
 
 #' @export
 fit_residual_regression_jax = function(X, y, fit, stride=1000){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
   p = dim(X)[2]
   start_idx = seq(1, p, stride)
   end_idx = pmin(start_idx + stride - 1, p)
@@ -102,7 +106,7 @@ fit_residual_regression_jax = function(X, y, fit, stride=1000){
   tictoc::tic()
   mpy <- purrr::map_dfr(
     1:length(start_idx), ~.fit_univariate_regression_jax(
-      X[, start_idx[.x]:end_idx[.x]], y, offset)
+      X[, start_idx[.x]:end_idx[.x]], y, offset, proc)
   )
   tictoc::toc()
   return(mpy)
