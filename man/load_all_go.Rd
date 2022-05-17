@@ -7,7 +7,7 @@
 load_all_go(min.size = 10)
 }
 \arguments{
-\item{min.size}{minimum number of genes in term}
+\item{min.size}{minimum number of genes in term (default 10)}
 }
 \description{
 convenient function to load all GO terms (across ontologies BP, MF, CC)

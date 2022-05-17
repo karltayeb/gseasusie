@@ -2,7 +2,7 @@
 % Please edit documentation in R/load_genesets.R
 \name{load_msigdb_geneset_x}
 \alias{load_msigdb_geneset_x}
-\title{load MSigDB gene sets from \code{msigdbr} package}
+\title{load MSigDB gene sets from \code{msigdbr} package in standardized format}
 \usage{
 load_msigdb_geneset_x(db = "C2", min.size = 10)
 }
@@ -12,5 +12,5 @@ load_msigdb_geneset_x(db = "C2", min.size = 10)
 \item{min.size}{remove gene sets smaller than this (default 10)}
 }
 \description{
-load MSigDB gene sets from \code{msigdbr} package
+load MSigDB gene sets from \code{msigdbr} package in standardized format
 }
