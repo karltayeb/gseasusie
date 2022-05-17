@@ -29,7 +29,7 @@ prep_binary_data = function(gs, dat, thresh=1e-2, ptop=NULL, .sign=c(1, -1)) {
   y <- dat %>%
     dplyr::filter(ENTREZID %in% gs.genes, !is.na(threshold.on)) %>%
     dplyr::mutate(threshold.on = dplyr::if_else(sign(beta) %in% .sign, threshold.on, 1)) %>%
-    dplyr::mutate(geneList = as.integer(threshold.on < thresh)) %>%
+    dplyr::mutate(geneList = as.integer(threshold.on <= thresh)) %>%
     dplyr::select(ENTREZID, geneList) %>%
     dplyr::distinct(across(ENTREZID), .keep_all = T) %>%
     tibble2namedlist()
