@@ -96,7 +96,7 @@ fit_residual_regression_jax = function(X, y, fit, stride=1000){
   p = dim(X)[2]
   start_idx = seq(1, p, stride)
   end_idx = pmin(start_idx + stride - 1, p)
-  offset <- fit$veb.fit$mu1
+  offset <- susie_pred(fit, X)
 
   message('fitting residual logistic regressions...')
   tictoc::tic()
