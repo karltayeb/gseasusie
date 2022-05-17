@@ -216,13 +216,13 @@ get_credible_set_summary = function(res){
     rownames_to_column(var='geneSet') %>%
     rename_with(~str_replace(., 'X', 'L')) %>%
     dplyr::rename(L1 = 2) %>%  # rename deals with L=1 case
-    pivot_longer(starts_with('L'), names_to='component', values_to = 'beta')
+    pivot_longer(starts_with('L'), names_to='component', values_to = 'conditional_beta')
   se <- t(sqrt(res$mu2 - res$mu^2)) %>%
      data.frame() %>%
       rownames_to_column(var='geneSet') %>%
       rename_with(~str_replace(., 'X', 'L')) %>%
       dplyr::rename(L1 = 2) %>%  # rename deals with L=1 case
-      pivot_longer(starts_with('L'), names_to='component', values_to = 'beta.se')
+      pivot_longer(starts_with('L'), names_to='component', values_to = 'conditional_beta_se')
 
   credible.set.summary <- t(res$alpha) %>%
     data.frame() %>%
