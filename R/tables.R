@@ -74,7 +74,6 @@ interactive_table2 = function(res){
     dplyr::mutate(dplyr::across(!where(is.numeric), as.factor))
 
   dt %>%
-    dplyr::select(-c(in_cs)) %>%
     reactable::reactable(
       filterable=TRUE,
       minRows=10,
