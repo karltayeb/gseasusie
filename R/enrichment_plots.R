@@ -34,3 +34,18 @@ enrichment_volcano = function(fit, ora){
                                            'enriched' = 'dodgerblue',
                                            'not significant' = 'grey'))
 }
+
+#' @export
+residual_enrichment_histogram = function(marginal_regression, residual_regression){
+  plotdat <- rbind(
+    marginal_regression %>%
+      dplyr::select(geneSet, pval) %>% 
+      dplyr::mutate(model='marginal'),
+    residual_regression %>% 
+      dplyr::select(geneSet, pval) %>%
+      dplyr::mutate(model='residual')
+  )
+  
+  plotdat %>% ggplot(aes(x=pval)) +
+    ggplot2::geom_histogram() + ggplot2::facet_wrap(vars(model))
+}
