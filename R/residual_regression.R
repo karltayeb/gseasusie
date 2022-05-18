@@ -58,6 +58,7 @@ fit_marginal_regression = function(X, y){
 }
 
 .fit_univariate_regression_jax = function(X, y, offset=0, proc){
+  message('\tfitting univariate regression...')
   basilisk::basiliskRun(
     proc, function(X, y, offset) {
       np <- reticulate::import("numpy")
