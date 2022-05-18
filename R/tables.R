@@ -69,14 +69,14 @@ interactive_table2 = function(res){
     dplyr::arrange(dplyr::desc(nlog10pFishersExact)) %>%
     dplyr::mutate(
       fisherRank = dplyr::row_number(),
-      in_cs = dplyr::if_else(is.na(in_cs), FALSE, in_cs)) %>%
-    dplyr::select(geneSet, beta, pip, overlap, geneSetSize, logOddsRatio, nlog10pFishersExact, in_cs, component, fisherRank) %>%
+      in_active_cs = dplyr::if_else(is.na(in_cs), FALSE, in_cs & active_cs)) %>%
+    dplyr::select(geneSet, description, in_active_cs, beta, pip, overlap, geneSetSize, logOddsRatio, nlog10pFishersExact, component, fisherRank) %>%
     dplyr::mutate(dplyr::across(!where(is.numeric), as.factor))
 
   dt %>%
     reactable::reactable(
       filterable=TRUE,
-      minRows=10,
+      minRows=20,
       columns = list(
         pip = reactable::colDef(format = reactable::colFormat(digits = 3)),
         logOddsRatio = reactable::colDef(style= function(value){color_sign(value)},
@@ -86,10 +86,47 @@ interactive_table2 = function(res){
         nlog10pFishersExact = reactable::colDef(format = reactable::colFormat(digits = 3))
       ),
       rowStyle = function(index){
-        if(dt$in_cs[index] == TRUE){
+        if(dt$in_active_cs[index] == TRUE){
           list(background = "#e5f5e0")
         }
       },
       defaultSorted = list(nlog10pFishersExact='desc')
     )
+}
+
+pack_group = function(tbl){
+    components <- tbl$component
+    unique.components <- unique(components)
+    start <- match(unique.components, components)
+    end <- c(tail(start, -1) - 1, length(components))
+    res <- tbl %>% dplyr::select(-c(component)) %>% kbl()
+    for(i in 1:length(unique.components)){
+      res <- kableExtra::pack_rows(res, unique.components[i], start[i], end[i])
+    }
+    return(res)
+}
+
+#' Report credible set based summary of SuSiE
+#' @export
+static_table = function(res){
+  require(kableExtra)
+  tbl_filtered <-
+    res %>%
+    dplyr::arrange(pFishersExact) %>%
+    dplyr::mutate(fisherRank = row_number()) %>%
+    dplyr::filter(in_cs, active_cs) %>%
+    dplyr::group_by(component) %>%
+    dplyr::arrange(component, desc(alpha)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(logOddsRatio = log10(oddsRatio))
+
+  tbl_filtered %>%
+    dplyr::select(
+      component, geneSet, description, geneSetSize, overlap,
+      logOddsRatio, beta,
+      alpha, pip, pFishersExact, fisherRank) %>%
+    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+    pack_group %>%
+    kableExtra::column_spec(c(7), color=ifelse(tbl_filtered$beta > 0, 'green', 'red')) %>%
+    kableExtra::kable_styling()
 }
