@@ -75,7 +75,7 @@ fit_marginal_regression = function(X, y){
 }
 
 #' @export
-fit_marginal_regression_jax = function(X, y, stride=1000){
+fit_marginal_regression_jax = function(X, y, offset=0, stride=1000){
   proc <- basilisk::basiliskStart(jax_env)
   on.exit(basilisk::basiliskStop(proc))
 
@@ -87,7 +87,7 @@ fit_marginal_regression_jax = function(X, y, stride=1000){
   tictoc::tic()
   mpy <- purrr::map_dfr(
     1:length(start_idx), ~.fit_univariate_regression_jax(
-      X[, start_idx[.x]:end_idx[.x]], y, offset=0, proc)
+      X[, start_idx[.x]:end_idx[.x]], y, offset=offset, proc)
   )
   tictoc::toc()
   return(mpy)
