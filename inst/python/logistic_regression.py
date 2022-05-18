@@ -79,13 +79,14 @@ def newtonStep(beta, x, y, offset=0, penalty=0):
     beta = beta[0]
     beta_next = beta - jnp.linalg.solve(H(beta, x, y, offset, penalty), J(beta, x, y, offset, penalty))
     diff = jnp.sum((beta_next - beta)**2)
-    return beta_next, diff
+    maxiter = beta[2] - 1
+    return beta_next, diff, maxiter
 
 @jit
-def mle(beta_init, x, y, offset=0, penalty=0, tol=1e-6): 
-    beta_init = (beta_init, tol+1) 
+def mle(beta_init, x, y, offset=0, penalty=0, tol=1e-6, maxiter=1000): 
+    beta_init = (beta_init, tol+1, maxiter) 
     step = lambda b: newtonStep(b, x, y, offset, penalty)
-    beta, diff = jax.lax.while_loop(lambda b: b[1] > tol, step, beta_init)
+    beta, diff = jax.lax.while_loop(lambda b: (b[1] > tol) & (b[2] > 0), step, beta_init)
     fit_loglik = loglik(beta, x, y, offset) + penalty * beta[1]**2  # get rid of penalty (only for optimization)
     se = betahat_se(beta, x, y, offset=0)
     return {
