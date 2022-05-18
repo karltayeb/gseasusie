@@ -76,17 +76,17 @@ H = jax.hessian(loglik, 0)
 
 @jit
 def newtonStep(beta, x, y, offset=0, penalty=0):
-    beta = beta[0]
+    beta, diff, niter = beta
     beta_next = beta - jnp.linalg.solve(H(beta, x, y, offset, penalty), J(beta, x, y, offset, penalty))
     diff = jnp.sum((beta_next - beta)**2)
-    maxiter = beta[2] - 1
-    return beta_next, diff, maxiter
+    niter = niter + 1 
+    return beta_next, diff, niter
 
 @jit
-def mle(beta_init, x, y, offset=0, penalty=0, tol=1e-6, maxiter=1000): 
-    beta_init = (beta_init, tol+1, maxiter) 
+def mle(beta_init, x, y, offset=0, penalty=0, tol=1e-6, maxiter=100): 
+    beta_init = (beta_init, tol+1, 1) 
     step = lambda b: newtonStep(b, x, y, offset, penalty)
-    beta, diff, remainder = jax.lax.while_loop(lambda b: (b[1] > tol) & (b[2] > 0), step, beta_init)
+    beta, diff, niter = jax.lax.while_loop(lambda b: (b[1] > tol) & (b[2] < maxiter), step, beta_init)
     fit_loglik = loglik(beta, x, y, offset) + penalty * beta[1]**2  # get rid of penalty (only for optimization)
     se = betahat_se(beta, x, y, offset=0)
     return {
@@ -96,7 +96,7 @@ def mle(beta_init, x, y, offset=0, penalty=0, tol=1e-6, maxiter=1000):
         'effect_se': se[1],
         'loglik': fit_loglik,
         'eps': diff,
-        'total_iteration': maxiter - remainder
+        'total_iteration': niter
     }
 
 

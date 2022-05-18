@@ -68,7 +68,7 @@ fit_marginal_regression = function(X, y){
         tibble::as_tibble() %>%
         dplyr::mutate(geneSet = colnames(X)) %>%
         dplyr::mutate(pval = dplyr::if_else(is.finite(effect), pval, 1.)) %>%
-        dplyr::select(geneSet, effect, effect_se, intercept, intercept_se, loglik, lrts, pval)
+        dplyr::select(geneSet, effect, effect_se, intercept, intercept_se, loglik, lrts, pval, eps, total_iteration)
       mpy
     }, X=X, y=y, offset=offset
   )
