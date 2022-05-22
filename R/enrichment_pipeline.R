@@ -258,17 +258,7 @@ get_gene_set_summary = function(res){
     dplyr::mutate(beta=colSums(res$alpha * res$mu))
 }
 
-pack_group = function(tbl){
-    components <- tbl$component
-    unique.components <- unique(components)
-    start <- match(unique.components, components)
-    end <- c(tail(start, -1) - 1, length(components))
-    res <- tbl %>% dplyr::select(-c(component)) %>% kbl()
-    for(i in 1:length(unique.components)){
-      res <- pack_rows(res, unique.components[i], start[i], end[i])
-    }
-    return(res)
-}
+
 
 
 
@@ -319,32 +309,4 @@ get_table_tbl = function(fits, ora){
 }
 
 
-#' Report credible set based summary of SuSiE
-#' @param tbl output of \alias{get_credible_set_summary} to be formatted
-#' @param target_coverage the coverage of the credible sets to be reported
-#' @param max_coverage report SNPs that are not in the target_coverage c.s. up this value
-#' @param max_sets maximum number of gene sets to report for a single credible set
-#'    this is useful for large credible sets
-#' @return A styled kable table suitable for rendering in an HTML document
-#' @export
-report_susie_credible_sets = function(tbl,
-                                      target_coverage=0.95,
-                                      max_coverage=0.99,
-                                      max_sets=10){
-  require(kableExtra)
-  tbl_filtered <-
-    tbl %>%
-    group_by(component) %>%
-    arrange(component, desc(alpha)) %>%
-    dplyr::filter(cumalpha <= max_coverage, alpha_rank <= max_sets) %>%
-    dplyr::mutate(in_cs = cumalpha <= target_coverage) %>% 
-    dplyr::ungroup() %>%
-    dplyr::mutate(logOddsRatio = log10(oddsRatio))
 
-  tbl_filtered %>%
-    dplyr::select(component, geneSet, description, geneSetSize, overlap, logOddsRatio, beta, beta.se, alpha, pip, pFishersExact) %>%
-    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
-    pack_group %>%
-    column_spec(c(4), color=ifelse(tbl_filtered$beta > 0, 'green', 'red')) %>%
-    kableExtra::kable_styling()
-}
