@@ -21,7 +21,7 @@ return(phyper(
 
 #' @export
 fit_ora = function(X, y){
-  message('computin ORA statistics...')
+  message('computing ORA statistics...')
   tictoc::tic()
   ora <- tibble(
       geneSet = colnames(X),
