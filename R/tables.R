@@ -99,7 +99,7 @@ pack_group = function(tbl){
     unique.components <- unique(components)
     start <- match(unique.components, components)
     end <- c(tail(start, -1) - 1, length(components))
-    res <- tbl %>% dplyr::select(-c(component)) %>% kbl()
+    res <- tbl %>% dplyr::select(-c(component)) %>% kableExtra::kbl()
     for(i in 1:length(unique.components)){
       res <- kableExtra::pack_rows(res, unique.components[i], start[i], end[i])
     }
@@ -108,25 +108,39 @@ pack_group = function(tbl){
 
 #' Report credible set based summary of SuSiE
 #' @export
-static_table = function(res){
-  require(kableExtra)
-  tbl_filtered <-
-    res %>%
-    dplyr::arrange(pFishersExact) %>%
-    dplyr::mutate(fisherRank = row_number()) %>%
-    dplyr::filter(in_cs, active_cs) %>%
-    dplyr::group_by(component) %>%
-    dplyr::arrange(component, desc(alpha)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(logOddsRatio = log10(oddsRatio))
+static_table = function(fit, ora){
+  res <- gseasusie:::get_gene_set_summary(fit) %>%
+    dplyr::left_join(ora)
 
-  tbl_filtered %>%
+  csdat <- gseasusie:::get_credible_set_summary(fit) %>%
+    dplyr::left_join(ora) %>%
+    dplyr::filter(in_cs, active_cs) %>%
+    dplyr::select(geneSet, description, component, in_cs, alpha) %>%
+    distinct()
+  
+  dt <- res %>% 
+    dplyr::filter(overlap > 0) %>%
+    dplyr::mutate(
+      logOddsRatio = log(oddsRatio),
+      nlog10pFishersExact = -log10(pFishersExact)
+    ) %>%
+    dplyr::left_join(csdat) %>%
+    dplyr::arrange(dplyr::desc(nlog10pFishersExact)) %>%
+    dplyr::mutate(
+      fisherRank = dplyr::row_number(),
+      in_cs = dplyr::if_else(is.na(in_cs), FALSE, in_cs)) %>%
+    dplyr::filter(in_cs) %>%
+    dplyr::select(tidyselect::any_of(
+      c("geneSet", "description", "beta", "alpha", "pip", "overlap", "geneSetSize", "logOddsRatio", "nlog10pFishersExact", "in_cs", "component", "fisherRank"))) %>%
+    dplyr::mutate(dplyr::across(!where(is.numeric) , as.factor))
+
+  dt %>%
     dplyr::select(
       component, geneSet, description, geneSetSize, overlap,
       logOddsRatio, beta,
-      alpha, pip, pFishersExact, fisherRank) %>%
+      alpha, pip, nlog10pFishersExact, fisherRank) %>%
     dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
     pack_group %>%
-    kableExtra::column_spec(c(7), color=ifelse(tbl_filtered$beta > 0, 'green', 'red')) %>%
+    kableExtra::column_spec(c(7), color=ifelse(dt$beta > 0, 'green', 'red')) %>%
     kableExtra::kable_styling()
 }
