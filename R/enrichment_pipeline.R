@@ -259,9 +259,6 @@ get_gene_set_summary = function(res){
 }
 
 
-
-
-
 # take credible set summary, return "best" row for each gene set
 get_cs_summary_condensed = function(fit){
   fit %>%
