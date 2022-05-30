@@ -404,6 +404,9 @@ fit_logistic_susie = function(
   standardize=FALSE, center_X=TRUE,
   tol = 1e-3, maxit = 1000, verbose=0) {
 
+  message('fitting logistic susie...')
+  tictoc::tic()
+
   res <- init_logistic_susie(
     X, y, L, V, prior_weights, init.intercept, intercept, Z,
     estimate_prior_variance, share_prior_variance, standardize, center_X)
@@ -429,5 +432,7 @@ fit_logistic_susie = function(
   }
   res <- wrapup_logistic_susie(res)
   res$converged <- TRUE
+
+  tictoc::toc()
   return(res)
 }
