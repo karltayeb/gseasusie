@@ -144,3 +144,27 @@ static_table = function(fit, ora){
     kableExtra::column_spec(c(7), color=ifelse(dt$beta > 0, 'green', 'red')) %>%
     kableExtra::kable_styling()
 }
+
+#' @export
+static_table2 = function(res){
+  require(kableExtra)
+  tbl_filtered <-
+    res %>%
+    arrange(pFishersExact) %>%
+    mutate(fisherRank = row_number()) %>%
+    filter(in_cs, active_cs) %>%
+    group_by(component) %>%
+    arrange(component, desc(alpha)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(logOddsRatio = log10(oddsRatio))
+
+  tbl_filtered %>%
+    dplyr::select(
+      component, geneSet, description, geneSetSize, overlap,
+      logOddsRatio, conditional_beta, conditional_beta_se,
+      alpha, pip, pFishersExact, fisherRank) %>%
+    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
+    pack_group %>%
+    column_spec(c(4), color=ifelse(tbl_filtered$beta > 0, 'green', 'red')) %>%
+    kableExtra::kable_styling()
+}
