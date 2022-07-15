@@ -109,39 +109,50 @@ pack_group = function(tbl){
 #' Report credible set based summary of SuSiE
 #' @export
 static_table = function(fit, ora){
+  # get credible sets
   res <- gseasusie:::get_gene_set_summary(fit) %>%
     dplyr::left_join(ora)
-
   csdat <- gseasusie:::get_credible_set_summary(fit) %>%
     dplyr::left_join(ora) %>%
     dplyr::filter(in_cs, active_cs) %>%
-    dplyr::select(geneSet, description, component, in_cs, alpha) %>%
+    dplyr::select(geneSet, description, component, in_cs, alpha, conditional_beta) %>%
     distinct()
   
+  # manipulate table
+  columns <- c(
+    'geneSet', 'description', 'geneSetSize', 'overlap',
+    'log2OR', 'effect', 'alpha', 'pip', 'nlog10pFishersExact', 'fisherRank',
+    'component'
+  )
+  color_columns <- which(columns %in% c('log2OR', 'effect'))
   dt <- res %>% 
     dplyr::filter(overlap > 0) %>%
     dplyr::mutate(
-      logOddsRatio = log(oddsRatio),
+      log2OR = log2(oddsRatio),
       nlog10pFishersExact = -log10(pFishersExact)
     ) %>%
     dplyr::left_join(csdat) %>%
     dplyr::arrange(dplyr::desc(nlog10pFishersExact)) %>%
     dplyr::mutate(
       fisherRank = dplyr::row_number(),
-      in_cs = dplyr::if_else(is.na(in_cs), FALSE, in_cs)) %>%
+      in_cs = dplyr::if_else(is.na(in_cs), FALSE, in_cs),
+      effect = conditional_beta * log2(exp(1))
+    ) %>%
     dplyr::filter(in_cs) %>%
-    dplyr::select(tidyselect::any_of(
-      c("geneSet", "description", "beta", "alpha", "pip", "overlap", "geneSetSize", "logOddsRatio", "nlog10pFishersExact", "in_cs", "component", "fisherRank"))) %>%
-    dplyr::mutate(dplyr::across(!where(is.numeric) , as.factor))
+    dplyr::select(columns) %>%
+    dplyr::mutate(dplyr::across(!where(is.numeric) , as.factor)) %>%
+    mutate(
+      component = reorder(factor(component), fisherRank, FUN=min) 
+      # sorts components
+    ) %>%
+    dplyr::arrange(component) %>%
+    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
 
+  # display table
   dt %>%
-    dplyr::select(
-      component, geneSet, description, geneSetSize, overlap,
-      logOddsRatio, beta,
-      alpha, pip, nlog10pFishersExact, fisherRank) %>%
-    dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3)))) %>%
     pack_group %>%
-    kableExtra::column_spec(c(7), color=ifelse(dt$beta > 0, 'green', 'red')) %>%
+    kableExtra::column_spec(
+      color_columns, color=ifelse(dt$effect > 0, 'green', 'red')) %>%
     kableExtra::kable_styling()
 }
 
