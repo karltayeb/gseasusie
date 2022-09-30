@@ -2,7 +2,7 @@
 #' and tidy up output to be consistent with other susie-type outputs
 #' @export
 fit_logistic_susie_veb_boost = function(X, y, L=10, ...){
-    message('fitting logistic susie (via VEB.Boost')
+    message('fitting logistic susie (via VEB.Boost)')
     tictoc::tic()
     veb.fit = VEB.Boost::veb_boost_stumps(
         X, y, family = 'binomial',
