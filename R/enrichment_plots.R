@@ -55,7 +55,7 @@ residual_enrichment_histogram = function(marginal_regression, residual_regressio
 #' @export
 enrichment_volcano2 = function(res, p='pFishersExact', or='oddsRatio'){
   res %>% 
-    label_sig_enrichments() %>%
+    label_sig_enrichments(p=p, or=or) %>%
     ggplot2::ggplot(aes(x=log10(!!sym(or)), y=-log10(!!sym(p)), color=result)) +
     ggplot2::geom_point() +
     ggplot2::geom_point(
