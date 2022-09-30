@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import jax
 from jax import vmap
+import numpy as np
 
 def polya_gamma_mean(b, c):
     """
@@ -69,4 +70,6 @@ def marginal_vb_jax(X, y, tau0):
     xi_init = np.ones((n, p)) * 1e-3
     delta_init = np.zeros(p)
     tau0 = np.ones(p)
-    return univariate_vb_vec_jax(X, y, mu_init, tau_init, xi_init, delta_init, tau0) 
+    res = univariate_vb_vec_jax(X, y, mu_init, tau_init, xi_init, delta_init, tau0)
+    res = {k: np.array(v) for k, v in res.items()}  # convert to numpy for use in R
+    return res
