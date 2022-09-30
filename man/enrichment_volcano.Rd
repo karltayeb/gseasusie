@@ -5,7 +5,7 @@
 \title{make a volcato plot
 res is a tibble with columns oddsRatio, pFishersExact, in_cs, active_cs}
 \usage{
-enrichment_volcano(fit, ora)
+enrichment_volcano(fit, ora, or = "oddsRatio", p = "pFishersExact")
 }
 \arguments{
 \item{fit}{a fit logistic susie}
