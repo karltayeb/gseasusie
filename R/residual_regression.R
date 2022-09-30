@@ -7,7 +7,7 @@ susie_coef = function(fit){
 #' compute prediction
 #' @param fit a susie-type fit
 susie_pred = function(fit, X){
-  # TODO: take X as an argument   
+  # TODO: take X as an argument
   return((fit$intercept + X %*% susie_coef(fit))[, 1])
 }
 
@@ -64,7 +64,7 @@ fit_marginal_regression = function(X, y){
       np <- reticulate::import("numpy")
       reticulate::source_python(system.file("python", "logistic_regression.py", package = "gseasusie"))
       mpy <- logistic_regression_jax(X, np$array(y), np$array(offset))
-      mpy <- mpy %>% 
+      mpy <- mpy %>%
         tibble::as_tibble() %>%
         dplyr::mutate(geneSet = colnames(X)) %>%
         dplyr::mutate(pval = dplyr::if_else(is.finite(effect), pval, 1.)) %>%
@@ -111,4 +111,36 @@ fit_residual_regression_jax = function(X, y, fit, stride=1000){
   )
   tictoc::toc()
   return(mpy)
+}
+
+
+.fit_univariate_vb_jax = function(X, y, tau0, proc){
+  mpy <- basilisk::basiliskRun(
+    proc, function(X, y, tau0) {
+      np <- reticulate::import("numpy")
+      reticulate::source_python(system.file("python", "logistic_regression_vb.py", package = "gseasusie"))
+
+      mpy <- marginal_vb_jax(X, np$array(y), tau0)
+      mpy
+    }, X=X, y=y, tau0=tau0
+  )
+  return(mpy)
+}
+
+#' Fit Univariate VB Regression
+#'
+#' Fits variational approximation for univariate regression with a normal prior
+#' Implimented in JAX, fits a regression model for each column of X
+#'  y ~ Bernoulli(sigmoid(x * b))
+#'  b ~ N(0, 1/tau0)
+#'  @param X an n x p matrix
+#'  @param y a n vector binary response
+#'  @param tau0 the prior precision of the effect
+#'  @export
+fit_univariate_vb_regression_jax = function(X, y, tau0){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
+  res <- .fit_univariate_vb_jax(X, y, 1.0, proc)
+  return(res)
 }
