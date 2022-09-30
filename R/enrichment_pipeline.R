@@ -13,7 +13,7 @@ prep_binary_data = function(gs, dat, thresh=1e-2, ptop=NULL, .sign=c(1, -1)) {
 
   # dplyr::filter gene sets
   dat <- dat %>% filter(!is.na(threshold.on))
-  y.genes <- dat$ENTREZID 
+  y.genes <- dat$ENTREZID
   test.genes <- intersect(gs.genes, y.genes)
   X <- gs$X[test.genes,]
   bad.cols <- BiocGenerics::colSums(X)
@@ -183,7 +183,7 @@ do_tccm_point_normal_susie = function(experiment,
   if(is.null(susie.args)){  # default SuSiE args
     susie.args = list(L=10, verbose=T, maxit=500)
   }
-  fit <- exec(fit_tccm_point_normal_susie, u$beta, u$se, u$X, !!!susie.args)
+  fit <- exec(logisticsusie::twococomo(u$X, u$beta, u$se, !!!susie.args))
   res = tibble(
     experiment=experiment,
     db=db,
@@ -203,7 +203,7 @@ do_ora = function(experiment,
   gs <- genesets[[db]]
   dat <- data[[experiment]]
   u <- prep_binary_data(gs, dat, thresh, .sign)  # subset to common genes
-  ora <- fit_ora(u$X, u$y) 
+  ora <- fit_ora(u$X, u$y)
   # add description
   ora <- ora %>%
     dplyr::left_join(gs$geneSet$geneSetDes)
