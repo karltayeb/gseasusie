@@ -55,14 +55,6 @@ def fit_univariate_vb(x, y, mu, tau, xi, delta, tau0):
     return dict(mu=mu, tau=tau, xi=xi, delta=delta, tau0=tau0, elbo=elbo)
 
 
-import numpy as np
-n = 500
-p = 100
-X = np.random.normal(size = (n, p))
-y = np.random.binomial(1, jax.nn.sigmoid(X[:, 10]))
-
-fit_univariate_vb(X[:, 1], y)
-
 univariate_vb_vec_jax = vmap( 
     fit_univariate_vb, 
     in_axes=(1, None, 0, 0, 1, 0, 0),
