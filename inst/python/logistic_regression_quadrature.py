@@ -60,26 +60,35 @@ def logreg_quad(x, y, b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights):
     logp = _logreg_quad(x, y, b_nodes, weights, b0_nodes, weights)
     return logp
 
-
+# vectorized over columns of X
 logreg_quad_X = vmap(
     logreg_quad,
     (1, None, None, None, None, None, None, None),
     0
 )
 
+# vectorized over sigma
+logreg_quad_sigma = vmap(
+    logreg_quad,
+    (None, None, None, 0, None, None, None, None),
+    0
+)
+# Examples/Tests
+# import numpy as np
+# X = np.random.normal(size=100000).reshape(2000, -1)
+# x = X[:, 1]
+# y = np.random.binomial(1, 1/(1 + np.exp(-x)))
 
-import numpy as np
-X = np.random.normal(size=1000000).reshape(2000, -1)
-x = X[:, 1]
-y = np.random.binomial(1, 1/(1 + np.exp(-x)))
+# conditional_log_likelihood(x, y, 1, 0)
+# conditional_log_likelihood_vec_b(x, y, np.array([-1, 0, 1]), 0)
 
-conditional_log_likelihood(x, y, 1, 0)
-conditional_log_likelihood_vec_b(x, y, np.array([-1, 0, 1]), 0)
+# nodes, weights = np.polynomial.hermite_e.hermegauss(64)
 
-nodes, weights = np.polynomial.hermite_e.hermegauss(64)
+# logreg_quad_fixed_intercept(x, y, nodes, weights, 0)
+# _logreg_quad(x, y, nodes, weights, nodes, weights)
+# logreg_quad(x, y, 0, 0.000001, 0, 1000, nodes, weights)
 
-logreg_quad_fixed_intercept(x, y, nodes, weights, 0)
-_logreg_quad(x, y, nodes, weights, nodes, weights)
-logreg_quad(x, y, 0, 0.000001, 0, 1000, nodes, weights)
+# logreg_quad(x, y, 0, 0.000001, 0, 1000, nodes, weights)
+# logreg_quad(X[:, 10], y, 0, 0.000001, 0, 1000, nodes, weights)
 
-res = logreg_quad_X(X, y, 0, 1, 0, 1, nodes, weights)
+# res = logreg_quad_X(X, y, 0, 1, 0, 1, nodes, weights)
