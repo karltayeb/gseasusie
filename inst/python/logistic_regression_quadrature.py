@@ -19,7 +19,7 @@ def conditional_log_likelihood_jax(x, y, b, b0):
 
 # integrate over b
 conditional_log_likelihood_vec_b_jax= vmap(
-    conditional_log_likelihood,
+    conditional_log_likelihood_jax,
     (None, None, 0, None), 0)
 
 def logreg_quad_fixed_intercept_jax(x, y, b, b_weights, b0):
