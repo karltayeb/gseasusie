@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from jax import vmap
 from jax.scipy.special import logsumexp
 
-def conditional_log_likelihood(x, y, b, b0):
+def conditional_log_likelihood_jax(x, y, b, b0):
     """
     computes \sum logp(y_i | sigmoid(b*x_i + b0))
     x, y can be arbitrary shape but must have same shape
@@ -18,22 +18,22 @@ def conditional_log_likelihood(x, y, b, b0):
 
 
 # integrate over b
-conditional_log_likelihood_vec_b= vmap(
+conditional_log_likelihood_vec_b_jax= vmap(
     conditional_log_likelihood,
     (None, None, 0, None), 0)
 
-def logreg_quad_fixed_intercept(x, y, b, b_weights, b0):
-    conditional = conditional_log_likelihood_vec_b(x, y, b, b0)
+def logreg_quad_fixed_intercept_jax(x, y, b, b_weights, b0):
+    conditional = conditional_log_likelihood_vec_b_jax(x, y, b, b0)
     marginal = logsumexp(conditional + jnp.log(b_weights))
     return marginal
 
 # integrate over b0
-logreg_quad_fixed_intercept_vec_b0 = vmap(
-    logreg_quad_fixed_intercept, 
+logreg_quad_fixed_intercept_vec_b0_jax = vmap(
+    logreg_quad_fixed_intercept_jax, 
     (None, None, None, None, 0), 0
 )
-def _logreg_quad(x, y, b, b_weights, b0, b0_weights):
-    conditional = logreg_quad_fixed_intercept_vec_b0(x, y, b, b_weights, b0)
+def _logreg_quad_jax(x, y, b, b_weights, b0, b0_weights):
+    conditional = logreg_quad_fixed_intercept_vec_b0_jax(x, y, b, b_weights, b0)
     marginal = logsumexp(conditional + jnp.log(b0_weights))
     return marginal
 
@@ -45,7 +45,7 @@ def scale_nodes(nodes, mu, sigma):
     """
     return sigma * nodes + mu
 
-def logreg_quad(x, y, b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights):
+def logreg_quad_jax(x, y, b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights):
     """
     x, y 1d data
     compute E[p(y | b, b0, x)]
@@ -61,15 +61,15 @@ def logreg_quad(x, y, b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights):
     return logp
 
 # vectorized over columns of X
-logreg_quad_X = vmap(
-    logreg_quad,
+logreg_quad_X_jax = vmap(
+    logreg_quad_jax,
     (1, None, None, None, None, None, None, None),
     0
 )
 
 # vectorized over sigma
-logreg_quad_sigma = vmap(
-    logreg_quad,
+logreg_quad_sigma_jax = vmap(
+    logreg_quad_jax,
     (None, None, None, 0, None, None, None, None),
     0
 )
@@ -92,3 +92,4 @@ logreg_quad_sigma = vmap(
 # logreg_quad(X[:, 10], y, 0, 0.000001, 0, 1000, nodes, weights)
 
 # res = logreg_quad_X(X, y, 0, 1, 0, 1, nodes, weights)
+# res = logreg_quad_sigma(x, y, 0, np.array([0.1, 1., 10, 100]), 0, 1)
