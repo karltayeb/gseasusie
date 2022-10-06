@@ -149,7 +149,7 @@ fit_univariate_vb_regression_jax = function(X, y, tau0){
       jnp <- reticulate::import("jax.numpy")
 
       reticulate::source_python(system.file("python", "logistic_regression_quadrature.py", package = "gseasusie"))
-      mpy <- with(dat, np$array(logreg_quad_X(
+      mpy <- with(dat, np$array(logreg_quad_X_jax(
         jnp$array(X), jnp$array(y), b_mu, b_sigma, b0_mu, b0_sigma, jnp$array(nodes), jnp$array(weights))))
       mpy
     }, dat=dat
@@ -211,4 +211,116 @@ compute_evidence_quadrature_jax = function(X, y, b_mu, b_sigma, b0_mu, b0_sigma,
 }
 
 
+
+# 2d quadrature of 1 dimensional logistic-normal
+.compute_evidence_quadrature_2d = function(X, y, params, n, proc){
+  mpy <- basilisk::basiliskRun(
+    proc, function(X, y, params, n) {
+      # imports
+      np <- reticulate::import("numpy")
+      jnp <- reticulate::import("jax.numpy")
+      reticulate::source_python(system.file("python", "logistic_regression_quadrature.py", package = "gseasusie"))
+
+      # number of covariates
+      p <- dim(X)[2]
+      
+      # get quadrature points
+      q <- statmod::gauss.quad.prob(n, dist='normal')
+      nodes <- jnp$array(q$nodes)
+      weights <- jnp$array(q$weights)
+      
+      mpy <- with(params, purrr::map(1:p, ~logreg_quad_jax(jnp$array(X[, .x]), jnp$array(y), b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights)))
+      mpy <- np$array(unlist(mpy))
+      mpy
+  }, X=X, y=y, params=params, n=n)
+  return(mpy)
+}
+compute_evidence_quadrature_2d = function(X, y, params, n=128){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
+  message('computing evidence via quadrature...')
+  tictoc::tic()
+  res <- .compute_evidence_quadrature_2d(X, y, params, n, proc)
+  tictoc::toc()
+
+  return(res)
+}
+
+# 2d quadrature of 1 dimensional logistic-normal
+.compute_evidence_quadrature_best_b0= function(X, y, params, n, proc){
+  mpy <- basilisk::basiliskRun(
+    proc, function(X, y, params, n) {
+      # imports
+      np <- reticulate::import("numpy")
+      jnp <- reticulate::import("jax.numpy")
+      reticulate::source_python(system.file("python", "logistic_regression_quadrature.py", package = "gseasusie"))
+
+      # number of covariates
+      p <- dim(X)[2]
+      
+      # get quadrature points
+      q <- statmod::gauss.quad.prob(n, dist='normal')
+      nodes <- jnp$array(q$nodes)
+      weights <- jnp$array(q$weights)
+      
+      mpy <- with(params, purrr::map(1:p, ~logreg_quad_best_intercept_jax(jnp$array(X[, .x]), jnp$array(y), b_mu, b_sigma, nodes, weights)))
+      mpy <- np$array(unlist(mpy))
+      mpy
+  }, X=X, y=y, params=params, n=n)
+  return(mpy)
+}
+
+compute_evidence_quadrature_best_b0 = function(X, y, params, n=128){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
+  message('computing approximate evidence via quadrature (best b0)...')
+  tictoc::tic()
+  res <- .compute_evidence_quadrature_best_b0(X, y, params, n, proc)
+  tictoc::toc()
+
+  return(res)
+}
+
+
+# quadrature with fixed intercept
+.compute_evidence_quadrature_fixed_b0= function(X, y, b0, params, n, proc){
+  mpy <- basilisk::basiliskRun(
+    proc, function(X, y, b0, params, n) {
+      # imports
+      np <- reticulate::import("numpy")
+      jnp <- reticulate::import("jax.numpy")
+      reticulate::source_python(system.file("python", "logistic_regression_quadrature.py", package = "gseasusie"))
+
+      # number of covariates
+      p <- dim(X)[2]
+      
+      # get quadrature points
+      q <- statmod::gauss.quad.prob(n, dist='normal')
+      nodes <- jnp$array(q$nodes)
+      weights <- jnp$array(q$weights)
+      
+      mpy <- with(params, purrr::map(1:p, ~logreg_quad_fixed_intercept_jax(jnp$array(X[, .x]), jnp$array(y), b_mu, b_sigma, b0[.x], nodes, weights)))
+      mpy <- np$array(unlist(mpy))
+      mpy
+  }, X=X, y=y, b0=b0, params=params, n=n)
+  return(mpy)
+}
+
+compute_evidence_quadrature_fixed_b0 = function(X, y, b0, params, n=128){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
+  if(length(b0) == 1){
+    b0 <- rep(1, dim(X)[2]) * b0
+  }
+
+  message('computing approximate evidence via quadrature (best b0)...')
+  tictoc::tic()
+  res <- .compute_evidence_quadrature_fixed_b0(X, y, b0, params, n, proc)
+  tictoc::toc()
+
+  return(res)
+}
 
