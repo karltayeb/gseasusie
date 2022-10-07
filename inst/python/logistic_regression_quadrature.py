@@ -143,13 +143,13 @@ def logreg_quad_jax(x, y, offset, b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights
 
 
 # # Examples/Tests
-import numpy as np
-X = np.random.normal(size=10000).reshape(2000, -1)
-x = X[:, 1]
-y = np.random.binomial(1, 1/(1 + np.exp(-x)))
+# import numpy as np
+# X = np.random.normal(size=10000).reshape(2000, -1)
+# x = X[:, 1]
+# y = np.random.binomial(1, 1/(1 + np.exp(-x)))
 
-best_conditional_log_likelihood_jax(x, y, 0, 1)
-best_conditional_log_likelihood2_jax(x, y, 0, 1)
+# best_conditional_log_likelihood_jax(x, y, 0, 1)
+# best_conditional_log_likelihood2_jax(x, y, 0, 1)
 # res = logreg_quad_X_jax(X, y, 0, 1, 0, 1, nodes, weights)
 
 # conditional_log_likelihood_jax(x, y, 1, 0)
