@@ -12,7 +12,6 @@ def polya_gamma_mean(b, c):
     # return b/c * (sigmoid(c) - 0.5)  # equivalent 
     return 0.5 * b/c * jnp.tanh(c/2)
 
-
 def normal_kl(mu, var, mu0=0, var0=1):
     return 0.5 * (jnp.log(var0) - jnp.log(var) + var/var0 + (mu - mu0)**2/var0 - 1)
 
@@ -130,7 +129,7 @@ def marginal_vb_jax(X, y, tau0, offset=None):
     tau_init = np.ones(p)
     xi_init = np.ones((n, p)) * 1e-3
     delta_init = np.zeros(p)
-    tau0 = np.ones(p)
+    tau0 = np.ones(p) * tau0
     if offset is None:
         offset = np.zeros(n)
     res = univariate_vb_vec_jax(X, y, mu_init, tau_init, xi_init, delta_init, tau0, offset)

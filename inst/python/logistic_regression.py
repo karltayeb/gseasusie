@@ -84,6 +84,11 @@ def newtonStep(beta, x, y, offset=0, penalty=0):
 
 @jit
 def mle(beta_init, x, y, offset=0, penalty=0, tol=1e-6, maxiter=100): 
+    # initialize to linear regression fit
+    # xc = x - jnp.mean(x)
+    # yc = y = jnp.mean(y)
+    # beta1 = jnp.sum(yc * xc) / jnp.sum(xc * xc)
+    # beta_init = jnp.array([beta_init[0], beta1])
     beta_init = (beta_init, tol+1, 1) 
     step = lambda b: newtonStep(b, x, y, offset, penalty)
     beta, diff, niter = jax.lax.while_loop(lambda b: (b[1] > tol) & (b[2] < maxiter), step, beta_init)

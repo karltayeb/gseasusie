@@ -125,6 +125,48 @@ prep_list_data <- function(gene_list, study_background=NULL, study_id_type='SYMB
   )
 }
 
+#' takes gene_list, study_backround, and geneset
+prep_list_data2 <- function(gene_list, study_background=NULL, study_id_type='SYMBOL', geneset){
+  # load db and extract background genes
+  background <- rownames(geneset$X)
+  background_id_type = 'ENTREZID'  # TODO: better to have this info stored in DB, rather than enforcing standard
+
+  # get test_background map
+  g2g <- generate_test_background_map(study_background, background, study_id_type, background_id_type)
+
+  # map ids in gene list
+  gene_list_converted <- g2g %>%
+    dplyr::filter(!!rlang::sym(study_id_type) %in% gene_list) %>%
+    dplyr::pull(!!rlang::sym(background_id_type))
+
+  test_background <- g2g %>% dplyr::pull(!!rlang::sym(background_id_type))
+
+  # genes that did not make it into test_background
+  gene_list_excluded <- setdiff(gene_list, g2g %>% dplyr::pull(!!rlang::sym(study_id_type)))
+  study_background_excluded <- setdiff(study_background, g2g %>% dplyr::pull(!!rlang::sym(study_id_type)))
+  background_excluded <- setdiff(background, g2g %>% dplyr::pull(!!rlang::sym(background_id_type)))
+
+  # convert to binary vector
+  y <- convert_genelist2binaryvector(gene_list_converted, test_background)
+
+  # subset gene set matirx
+  X <- subset_gene_set_matrix(geneset$X, test_background)
+  X.sets <- colnames(X)
+
+  data <- list(
+    y = y,
+    X = X,
+    test_background = test_background,
+    study_background = study_background,
+    background = background,
+    gene_list_excluded = gene_list_excluded,
+    study_background_excluded = study_background_excluded,
+    background_excluded = background_excluded,
+    X.sets = colnames(X)
+  )
+}
+
+
 list_driver <- function(gene_list, study_background=NULL, study_id_type='SYMBOL', db='pathways'){
   # 1.  prepare data
   data <- prep_list_data(gene_list,
@@ -215,3 +257,49 @@ score_driver <- function(gene_scores, gene_scores_sd=NULL, study_id_type='SYMBOL
 #pnsusie <- score_driver(gene_scores)
 
 
+#' @export
+coerce_list <- function(list, background, gs_background, from='ENSEMBL', to='ENTREZID'){
+  # map unique IDs
+  idmap <- gseasusie:::generate_geneidmap(background, from, to, filter = T)
+  colnames(idmap) <- c('from', 'to')
+
+  # subset gene list background to genes that can be mapped
+  background2 <- intersect(background, idmap$from)
+  # map gene ids
+  background3 <- idmap[idmap$from %in% background2,]$to
+  # intersect with gene set background
+  background4 <- intersect(gs_background, background3)
+
+  # get gene list, restricted to shared background genes
+  idmap <- idmap[idmap$to %in% background4,]
+  list4 <- idmap[idmap$from %in% list,]$to
+
+  res <- list(list = list4, background = background4)
+  return(res)
+}
+
+#' Coerce scores
+#'
+#' @param de a data.frame or similar
+#' @export
+coerce_scores <- function(de, gs_background, from='ENSEMBL', to = 'ENTREZID'){
+  # get gene names from rownames, assign to column ID
+  background <- rownames(de)
+  de <- de %>% mutate(ID = rownames(de))
+
+  # map unique IDs
+  idmap <- gseasusie:::generate_geneidmap(background, from, to, filter = T)
+  colnames(idmap) <- c('from', 'to')
+
+  # subset gene list background to genes that can be uniquely mapped
+  background2 <- intersect(background, idmap$from)
+  # map gene ids
+  background3 <- idmap[idmap$from %in% background2,]$to
+  # intersect with gene set background
+  background4 <- intersect(gs_background, background3)
+
+  # get gene list, restricted to shared background genes
+  idmap <- idmap[idmap$to %in% background4,]
+  de2 <- idmap %>% inner_join(de, by=join_by(from == ID))
+  return(de2)
+}

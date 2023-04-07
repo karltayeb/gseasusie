@@ -114,15 +114,15 @@ fit_residual_regression_jax = function(X, y, fit, stride=1000){
 }
 
 
-.fit_univariate_vb_jax = function(X, y, tau0, proc){
+.fit_univariate_vb_jax = function(X, y, tau0, offset, proc){
   mpy <- basilisk::basiliskRun(
-    proc, function(X, y, tau0) {
+    proc, function(X, y, tau0, offset) {
       np <- reticulate::import("numpy")
+      jnp <- reticulate::import("numpy")
       reticulate::source_python(system.file("python", "logistic_regression_vb.py", package = "gseasusie"))
-
-      mpy <- marginal_vb_jax(X, np$array(y), tau0)
+      mpy <- marginal_vb_jax(jnp$array(X), jnp$array(y), tau0, jnp$array(offset))
       mpy
-    }, X=X, y=y, tau0=tau0
+    }, X=X, y=y, tau0=tau0, offset=offset
   )
   return(mpy)
 }
@@ -131,126 +131,32 @@ fit_residual_regression_jax = function(X, y, fit, stride=1000){
 #'
 #' Fits variational approximation for univariate regression with a normal prior
 #' Implimented in JAX, fits a regression model for each column of X
-#'  y ~ Bernoulli(sigmoid(x * b))
-#'  b ~ N(0, 1/tau0)
-#'  @param X an n x p matrix
-#'  @param y a n vector binary response
-#'  @param tau0 the prior precision of the effect
-#'  @export
-fit_univariate_vb_regression_jax = function(X, y, tau0){
-  res <- .fit_univariate_vb_jax(X, y, 1.0, proc)
-  return(res)
-}
-
-.compute_evidence_quadrature_jax = function(dat, proc){
-  mpy <- basilisk::basiliskRun(
-    proc, function(dat) {
-      np <- reticulate::import("numpy")
-      jnp <- reticulate::import("jax.numpy")
-
-      reticulate::source_python(system.file("python", "logistic_regression_quadrature.py", package = "gseasusie"))
-      mpy <- with(dat, np$array(logreg_quad_X_jax(
-        jnp$array(X), jnp$array(y), b_mu, b_sigma, b0_mu, b0_sigma, jnp$array(nodes), jnp$array(weights))))
-      mpy
-    }, dat=dat
-  )
-  return(mpy)
-}
-
-
-#' Compute evidence for a univariate Bayesian logistic regression
-#' y ~ Binomial(sigmoid(x*b + b0)), b ~ N(b_mu, b_sigma^2), b0 ~ N(b0_mu, b0_sigma^2)
-#' @param X an n x p matrix of covariates
-#' @param y a binary n vector of responses
-#' @param b_mu prior mean for the effect
-#' @param b_sigma prior standard deviation of effect
-#' @param b0_mu prior mean for the intercept
-#' @param b0_sigma prior standard deviation of the intercept
-#' @param n the number of quadrature points in a Gauss Hermite quadrature
-#' @param stride the number of columns of X to batch together-- larger the better as long as you have memory to handle it
-compute_evidence_quadrature_jax = function(X, y, b_mu, b_sigma, b0_mu, b0_sigma, n=128, stride = 50){
-  proc <- basilisk::basiliskStart(jax_env)
+#'   y ~ Bernoulli(sigmoid(x * b))
+#'   b ~ N(0, 1/tau0)
+#' @param X an n x p matrix
+#' @param y a n vector binary response
+#' @param tau0 the prior precision of the effect
+#' @param offset offset
+#' @export
+fit_univariate_vb_regression_jax = function(X, y, tau0, offset=NULL){
+  proc <- basilisk::basiliskStart(gseasusie:::jax_env)
   on.exit(basilisk::basiliskStop(proc))
 
-  message('computing evidence via quadrature...')
+  message('Compute univariate logistic regression VB...')
   tictoc::tic()
-
-  # get quadrature points
-  q <- statmod::gauss.quad.prob(n, dist='normal')
-  nodes <- q$nodes
-  weights <- q$weights
-
-  # construct strides-- break it up because the n x p x quadrature points
-  # is memory intensive (so we chunk up the p dimension)
-  p = dim(X)[2]
-  start_idx = seq(1, p, stride)
-  end_idx = pmin(start_idx + stride - 1, p)
-
-  # helper function makes a subset of the data for each stried
-  make_dat <- function(start_idx, end_idx){
-    dat <- list(
-      X=X[, start_idx:end_idx],
-      y=y + 1e-10,
-      b_mu = b_mu + 1e-10,
-      b_sigma = b_sigma + 1e-10,
-      b0_mu = b0_mu + 1e-10,
-      b0_sigma=b0_sigma + 1e-10,
-      nodes = nodes,
-      weights = weights
-    )
-    return(dat)
+  if(is.null(offset)){
+    offset = rep(0, length(y))
   }
-
-  # for each stride compute log evidence
-  mpy <- unlist(purrr::map(
-    1:length(start_idx), ~.compute_evidence_quadrature_jax(
-      make_dat(start_idx[.x],end_idx[.x]), proc)
-  ))
-  tictoc::toc()
-  return(mpy)
-}
-
-
-
-# 2d quadrature of 1 dimensional logistic-normal
-.compute_evidence_quadrature_2d = function(X, y, params, n, proc){
-  mpy <- basilisk::basiliskRun(
-    proc, function(X, y, params, n) {
-      # imports
-      np <- reticulate::import("numpy")
-      jnp <- reticulate::import("jax.numpy")
-      reticulate::source_python(system.file("python", "logistic_regression_quadrature.py", package = "gseasusie"))
-
-      # number of covariates
-      p <- dim(X)[2]
-      
-      # get quadrature points
-      q <- statmod::gauss.quad.prob(n, dist='normal')
-      nodes <- jnp$array(q$nodes)
-      weights <- jnp$array(q$weights)
-      
-      mpy <- with(params, purrr::map(1:p, ~logreg_quad_jax(jnp$array(X[, .x]), jnp$array(y), b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights)))
-      mpy <- np$array(unlist(mpy))
-      mpy
-  }, X=X, y=y, params=params, n=n)
-  return(mpy)
-}
-compute_evidence_quadrature_2d = function(X, y, params, n=128){
-  proc <- basilisk::basiliskStart(jax_env)
-  on.exit(basilisk::basiliskStop(proc))
-
-  message('computing evidence via quadrature...')
-  tictoc::tic()
-  res <- .compute_evidence_quadrature_2d(X, y, params, n, proc)
+  res <- .fit_univariate_vb_jax(X, y, tau0, offset, proc)
   tictoc::toc()
 
   return(res)
 }
 
 # 2d quadrature of 1 dimensional logistic-normal
-.compute_evidence_quadrature_best_b0= function(X, y, params, n, proc){
+.compute_evidence_quadrature_2d = function(X, y, offset, params, n, proc){
   mpy <- basilisk::basiliskRun(
-    proc, function(X, y, params, n) {
+    proc, function(X, y, offset, params, n) {
       # imports
       np <- reticulate::import("numpy")
       jnp <- reticulate::import("jax.numpy")
@@ -258,26 +164,61 @@ compute_evidence_quadrature_2d = function(X, y, params, n=128){
 
       # number of covariates
       p <- dim(X)[2]
-      
+
       # get quadrature points
       q <- statmod::gauss.quad.prob(n, dist='normal')
       nodes <- jnp$array(q$nodes)
       weights <- jnp$array(q$weights)
-      
-      mpy <- with(params, purrr::map(1:p, ~logreg_quad_best_intercept_jax(jnp$array(X[, .x]), jnp$array(y), b_mu, b_sigma, nodes, weights)))
+
+      mpy <- with(params, purrr::map(1:p, ~logreg_quad_jax(jnp$array(X[, .x]), jnp$array(y), jnp$array(offset), b_mu, b_sigma, b0_mu, b0_sigma, nodes, weights)))
       mpy <- np$array(unlist(mpy))
       mpy
-  }, X=X, y=y, params=params, n=n)
+  }, X=X, y=y, offset=offset, params=params, n=n)
+  return(mpy)
+}
+compute_evidence_quadrature_2d = function(X, y, offset, params, n=128){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
+  message('computing evidence via quadrature...')
+  tictoc::tic()
+  res <- .compute_evidence_quadrature_2d(X, y, offset, params, n, proc)
+  tictoc::toc()
+
+  return(res)
+}
+
+# 2d quadrature of 1 dimensional logistic-normal
+.compute_evidence_quadrature_best_b0= function(X, y, offset, params, n, proc){
+  mpy <- basilisk::basiliskRun(
+    proc, function(X, y, offset, params, n) {
+      # imports
+      np <- reticulate::import("numpy")
+      jnp <- reticulate::import("jax.numpy")
+      reticulate::source_python(system.file("python", "logistic_regression_quadrature.py", package = "gseasusie"))
+
+      # number of covariates
+      p <- dim(X)[2]
+
+      # get quadrature points
+      q <- statmod::gauss.quad.prob(n, dist='normal')
+      nodes <- jnp$array(q$nodes)
+      weights <- jnp$array(q$weights)
+
+      mpy <- with(params, purrr::map(1:p, ~logreg_quad_best_intercept_jax(jnp$array(X[, .x]), jnp$array(y), jnp$array(offset), b_mu, b_sigma, nodes, weights)))
+      mpy <- np$array(unlist(mpy))
+      mpy
+  }, X=X, y=y, offset=offset, params=params, n=n)
   return(mpy)
 }
 
-compute_evidence_quadrature_best_b0 = function(X, y, params, n=128){
+compute_evidence_quadrature_best_b0 = function(X, y, offset, params, n=128){
   proc <- basilisk::basiliskStart(jax_env)
   on.exit(basilisk::basiliskStop(proc))
 
   message('computing approximate evidence via quadrature (best b0)...')
   tictoc::tic()
-  res <- .compute_evidence_quadrature_best_b0(X, y, params, n, proc)
+  res <- .compute_evidence_quadrature_best_b0(X, y, offset, params, n, proc)
   tictoc::toc()
 
   return(res)
@@ -285,9 +226,9 @@ compute_evidence_quadrature_best_b0 = function(X, y, params, n=128){
 
 
 # quadrature with fixed intercept
-.compute_evidence_quadrature_fixed_b0= function(X, y, b0, params, n, proc){
+.compute_evidence_quadrature_fixed_b0= function(X, y, offset, b0, params, n, proc){
   mpy <- basilisk::basiliskRun(
-    proc, function(X, y, b0, params, n) {
+    proc, function(X, y, offset, b0, params, n) {
       # imports
       np <- reticulate::import("numpy")
       jnp <- reticulate::import("jax.numpy")
@@ -295,20 +236,20 @@ compute_evidence_quadrature_best_b0 = function(X, y, params, n=128){
 
       # number of covariates
       p <- dim(X)[2]
-      
+
       # get quadrature points
       q <- statmod::gauss.quad.prob(n, dist='normal')
       nodes <- jnp$array(q$nodes)
       weights <- jnp$array(q$weights)
-      
-      mpy <- with(params, purrr::map(1:p, ~logreg_quad_fixed_intercept_jax(jnp$array(X[, .x]), jnp$array(y), b_mu, b_sigma, b0[.x], nodes, weights)))
+
+      mpy <- with(params, purrr::map(1:p, ~logreg_quad_fixed_intercept_jax(jnp$array(X[, .x]), jnp$array(y), jnp$array(offset), b_mu, b_sigma, b0[.x], nodes, weights)))
       mpy <- np$array(unlist(mpy))
       mpy
-  }, X=X, y=y, b0=b0, params=params, n=n)
+  }, X=X, y=y, offset=offset, b0=b0, params=params, n=n)
   return(mpy)
 }
 
-compute_evidence_quadrature_fixed_b0 = function(X, y, b0, params, n=128){
+compute_evidence_quadrature_fixed_b0 = function(X, y, offset, b0, params, n=128){
   proc <- basilisk::basiliskStart(jax_env)
   on.exit(basilisk::basiliskStop(proc))
 
@@ -316,9 +257,65 @@ compute_evidence_quadrature_fixed_b0 = function(X, y, b0, params, n=128){
     b0 <- rep(1, dim(X)[2]) * b0
   }
 
-  message('computing approximate evidence via quadrature (best b0)...')
+  message('computing approximate evidence via quadrature (fixed  b0)...')
   tictoc::tic()
-  res <- .compute_evidence_quadrature_fixed_b0(X, y, b0, params, n, proc)
+  res <- .compute_evidence_quadrature_fixed_b0(X, y, offset, b0, params, n, proc)
+  tictoc::toc()
+
+  return(res)
+}
+
+
+
+.compute_evidence_quadrature_fixed_b0_batched= function(X, y, offset, b0, params, n, proc){
+  mpy <- basilisk::basiliskRun(
+    proc, function(X, y, offset, b0, params, n) {
+      # imports
+      np <- reticulate::import("numpy")
+      jnp <- reticulate::import("jax.numpy")
+      reticulate::source_python(system.file("python",
+                                            "logistic_regression_quadrature.py",
+                                            package = "gseasusie"))
+
+      # get quadrature points
+      q <- statmod::gauss.quad.prob(n, dist='normal')
+      nodes <- jnp$array(q$nodes)
+      weights <- jnp$array(q$weights)
+
+      mpy <- with(params, logreg_quad_fixed_intercept_X_jax(jnp$array(X),
+                                                            jnp$array(y),
+                                                            jnp$array(offset),
+                                                            jnp$array(b_mu),
+                                                            jnp$array(b_sigma),
+                                                            jnp$array(b0),
+                                                            nodes,
+                                                            weights))
+
+      mpy <- np$array(unlist(mpy))
+      mpy
+    }, X=X, y=y, offset=offset, b0=b0, params=params, n=n)
+  return(mpy)
+}
+
+compute_evidence_quadrature_fixed_b0_batched = function(X, y, offset, b0, params, n=128){
+  proc <- basilisk::basiliskStart(jax_env)
+  on.exit(basilisk::basiliskStop(proc))
+
+  if(length(b0) == 1){
+    b0 <- rep(1, dim(X)[2]) * b0
+  }
+
+  if(length(params$b_mu) == 1){
+    params$b_mu <- rep(1, dim(X)[2]) * params$b_mu
+  }
+
+  if(length(params$b_sigma) == 1){
+    params$b_sigma <- rep(1, dim(X)[2]) * params$b_sigma
+  }
+
+  message('computing approximate evidence via quadrature (fixed  b0)...')
+  tictoc::tic()
+  res <- .compute_evidence_quadrature_fixed_b0_batched(X, y, offset, b0, params, n, proc)
   tictoc::toc()
 
   return(res)

@@ -46,6 +46,14 @@ def logreg_quad_fixed_intercept_jax(x, y, offset, b_mu, b_sigma, b0, nodes, weig
     b_nodes = scale_nodes(nodes, b_mu, b_sigma)
     return _logreg_quad_fixed_intercept_jax(x, y, offset, b_nodes, weights, b0)
 
+
+# vectorize
+logreg_quad_fixed_intercept_X_jax = vmap(
+    logreg_quad_fixed_intercept_jax,
+    (1, None, None, 0, 0, 0, None, None),
+    0
+)
+
 #####
 # Option 2: \int max_{b0} p(y, b | b0)
 #####

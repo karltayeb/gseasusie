@@ -29,7 +29,7 @@ tibble2namedlist <- function(tibble){
 }
 
 #' convert a geneSet tibble into a list of gene sets
-#' 
+#'
 #' @param gs a tibble with two at least two columns: geneSet and gene
 #' @param min.size the minimum size to retain a gene set
 #' returns a named list mapping gene sets to genes
@@ -74,7 +74,7 @@ load.webGestalt.geneSet <- function(db='geneontology_Biological_Process_noRedund
 }
 
 #' formate WebGestaltR geneSets to standardized format
-load_webgestalt_geneset_x = function(db, min.size=10){ 
+load_webgestalt_geneset_x = function(db, min.size=10){
   message(paste0('loading gene set from webgestaltr: ', db))
   res <- xfun::cache_rds({
       gs <- load.webGestalt.geneSet(db)
@@ -93,7 +93,7 @@ load_msigdb_geneset_x <- function(db='C2', min.size=10){
   message(paste0('loading gene set from msigdbr: ', db))
   res <- xfun::cache_rds({
     msigdb.tb <- msigdbr::msigdbr(species="Homo sapiens", category = db)
-    geneSetDes <- msigdb.tb %>% 
+    geneSetDes <- msigdb.tb %>%
       dplyr::select(gs_id, gs_cat, gs_subcat, gs_description) %>%
       dplyr::distinct() %>%
       dplyr::rename(geneSet=gs_id, description=gs_description)
@@ -162,6 +162,9 @@ load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5',
     'c4', rlang::expr(gseasusie:::load_msigdb_geneset_x('C4', min.size=1)),
     'c5', rlang::expr(gseasusie:::load_msigdb_geneset_x('C5', min.size=1)),
     'c6', rlang::expr(gseasusie:::load_msigdb_geneset_x('C6', min.size=1)),
+    'c7', rlang::expr(gseasusie:::load_msigdb_geneset_x('C7', min.size=1)),
+    'c8', rlang::expr(gseasusie:::load_msigdb_geneset_x('C8', min.size=1)),
+    'h', rlang::expr(gseasusie:::load_msigdb_geneset_x('H', min.size=1)),
     'pathways', rlang::expr(gseasusie:::load_pathways_genesets()),
     'all_msigdb', rlang::expr(gseasusie:::load_all_msigdb()),
     'all_go', rlang:::expr(gseasusie:::load_all_go())

@@ -4,15 +4,20 @@
 \alias{fit_univariate_vb_regression_jax}
 \title{Fit Univariate VB Regression}
 \usage{
-fit_univariate_vb_regression_jax(X, y, tau0)
+fit_univariate_vb_regression_jax(X, y, tau0, offset = NULL)
+}
+\arguments{
+\item{X}{an n x p matrix}
+
+\item{y}{a n vector binary response}
+
+\item{tau0}{the prior precision of the effect}
+
+\item{offset}{offset}
 }
 \description{
 Fits variational approximation for univariate regression with a normal prior
 Implimented in JAX, fits a regression model for each column of X
 y ~ Bernoulli(sigmoid(x * b))
 b ~ N(0, 1/tau0)
-@param X an n x p matrix
-@param y a n vector binary response
-@param tau0 the prior precision of the effect
-@export
 }

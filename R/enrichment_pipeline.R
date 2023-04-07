@@ -90,9 +90,11 @@ do_logistic_susie = function(experiment,
 
   if(is.null(susie.args)){  # default SuSiE args
     susie.args = list(
-      L=10, init.intercept=0, verbose=1, maxit=500, standardize=FALSE)
+      L=10,
+      max_iter=500
+    )
   }
-  vb.fit <- exec(fit_logistic_susie, u$X, u$y, !!!susie.args)
+  vb.fit <- exec(logisticsusie::binsusie, u$X, u$y, !!!susie.args)
   res = tibble(
     experiment=experiment,
     db=db,
@@ -206,7 +208,7 @@ do_ora = function(experiment,
   ora <- fit_ora(u$X, u$y)
   # add description
   ora <- ora %>%
-    dplyr::left_join(gs$geneSet$geneSetDes)
+    dplyr::left_join(gs$geneSetDes)
   res = tibble(
     experiment=experiment,
     db=db,

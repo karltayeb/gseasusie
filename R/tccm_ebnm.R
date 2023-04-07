@@ -167,7 +167,7 @@ generate_h_susie = function(data, L=10) {
   y.init <- as.integer(abs(data$beta / data$se) > 2)
 
   # TODO: expose more initialization options
-  params.init = fit_logistic_susie(data$X, y.init, L=L, maxit=2)
+  params.init = logisticsusie::binsusie(data$X, y.init, L=L, max_iter=2)
   h = list(
     update = update,
     get_prior_logits = get_prior_logits,
@@ -237,6 +237,6 @@ fit_tccm_point_normal = function(beta, se, X, logit=-1, update.f1=FALSE, update.
   res$sets <- res$h$params$sets
   res$pip <- res$h$params$pip
   res$intercept <- res$h$params$intercept
-  class('res') <- 'susie'
+  class(res) <- 'susie'
   return(res)
 }
