@@ -175,7 +175,7 @@ list_driver <- function(gene_list, study_background=NULL, study_id_type='SYMBOL'
                          db = db)
 
   # 2. fit
-  logsusie_fit <- fit_logistic_susie_veb_boost(data$X, data$y)
+  #logsusie_fit <- fit_logistic_susie_veb_boost(data$X, data$y)
   susie_fit <- susieR::susie(data$X, data$y)
   ora <- fit_ora(data$X, data$y)
 

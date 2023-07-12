@@ -2,10 +2,10 @@
 % Please edit documentation in R/load_genesets.R
 \name{load_webgestalt_geneset_x}
 \alias{load_webgestalt_geneset_x}
-\title{formate WebGestaltR geneSets to standardized format}
+\title{format WebGestaltR geneSets to standardized format}
 \usage{
 load_webgestalt_geneset_x(db, min.size = 10)
 }
 \description{
-formate WebGestaltR geneSets to standardized format
+format WebGestaltR geneSets to standardized format
 }

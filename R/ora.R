@@ -1,10 +1,10 @@
 compute_fet_pval = function(overlap, geneListSize, geneSetSize, nGenes){
-ct <- matrix(c(
-    overlap,
-    geneListSize-overlap,
-    geneSetSize-overlap,
-    nGenes - geneSetSize - geneListSize + overlap), nr=2)
-return(fisher.test(ct)$p.value)
+  ct <- matrix(c(
+      overlap,
+      geneListSize-overlap,
+      geneSetSize-overlap,
+      nGenes - geneSetSize - geneListSize + overlap), nr=2)
+  return(fisher.test(ct)$p.value)
 }
 
 compute_hypergeometric_pval = function(overlap, geneListSize, geneSetSize, nGenes){

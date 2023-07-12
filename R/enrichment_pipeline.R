@@ -106,37 +106,6 @@ do_logistic_susie = function(experiment,
 }
 
 #' @export
-do_logistic_susie_veb_boost = function(experiment,
-                             db,
-                             thresh,
-                             genesets,
-                             data,
-                             susie.args=NULL,
-                             .sign=c(1, -1)) {
-  cat(paste0('Fitting logistic susie via VEB.Boost...',
-    '\n\tExperiment = ', experiment,
-    '\n\tDatabase = ', db,
-    '\n\tthresh = ', thresh))
-
-  gs <- genesets[[db]]
-  dat <- data[[experiment]]
-  u <- prep_binary_data(gs, dat, thresh, .sign)  # subset to common genes
-
-  if(is.null(susie.args)){  # default SuSiE args
-    susie.args = list(L=10, tol=1e-2)
-  }
-  vb.fit <- exec(fit_logistic_susie_veb_boost, u$X, u$y, !!!susie.args)
-  res = tibble(
-    experiment=experiment,
-    db=db,
-    thresh=thresh,
-    fit=list(vb.fit),
-    susie.args = list(susie.args)
-  )
-  return(res)
-}
-
-#' @export
 do_linear_susie = function(experiment,
                            db,
                            thresh,
@@ -163,33 +132,6 @@ do_linear_susie = function(experiment,
     db=db,
     thresh=thresh,
     fit=list(vb.fit),
-    susie.args = list(susie.args)
-  )
-  return(res)
-}
-
-#' @export
-do_tccm_point_normal_susie = function(experiment,
-                             db,
-                             genesets,
-                             data,
-                             susie.args=NULL) {
-  cat(paste0(
-    'Fitting point-normal susie...',
-    '\n\tExperiment = ', experiment,
-    '\n\tDatabase = ', db))
-  gs <- genesets[[db]]
-  dat <- data[[experiment]]
-  u <- prep_sumstat_data(gs, dat)  # subset to common genes
-
-  if(is.null(susie.args)){  # default SuSiE args
-    susie.args = list(L=10, verbose=T, maxit=500)
-  }
-  fit <- exec(logisticsusie::twococomo(u$X, u$beta, u$se, !!!susie.args))
-  res = tibble(
-    experiment=experiment,
-    db=db,
-    fit=list(fit),
     susie.args = list(susie.args)
   )
   return(res)

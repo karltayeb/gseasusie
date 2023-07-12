@@ -73,7 +73,7 @@ load.webGestalt.geneSet <- function(db='geneontology_Biological_Process_noRedund
   return(geneSet)
 }
 
-#' formate WebGestaltR geneSets to standardized format
+#' format WebGestaltR geneSets to standardized format
 load_webgestalt_geneset_x = function(db, min.size=10){
   message(paste0('loading gene set from webgestaltr: ', db))
   res <- xfun::cache_rds({
