@@ -7,7 +7,7 @@ Description: Package of functions implimenting various itererations of GSEA with
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 biocViews:
 Imports:
     modules (>= 0.10.0),
@@ -16,14 +16,11 @@ Imports:
     WebGestaltR (>= 0.4.4),
     magrittr (>= 2.0.0),
     susieR (>= 0.11.92),
-    VEB.Boost (>= 0.0.0.9032),
     fastglm,
     ggplot2,
     tidyr,
     furrr,
     basilisk
-Remotes: 
-    stephenslab/VEB.Boost
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
