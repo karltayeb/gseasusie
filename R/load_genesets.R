@@ -33,11 +33,11 @@ tibble2namedlist <- function(tibble){
 #' @param gs a tibble with two at least two columns: geneSet and gene
 #' @param min.size the minimum size to retain a gene set
 #' returns a named list mapping gene sets to genes
-convertGeneSet <- function(geneSet, min.size = 100){
+convertGeneSet <- function(geneSet, min.size = 1){
   geneSet %>%
+    dplyr::select(geneSet, gene) %>%
     dplyr::group_by(geneSet) %>%
     dplyr::filter(dplyr::n() >= min.size) %>%
-    dplyr::select(gene) %>%
     tidyr::chop(gene) %>% dplyr::ungroup() %>%
     tibble2namedlist
 }
@@ -147,6 +147,8 @@ load_all_go = function(min.size=10){
 }
 
 #' load gene sets from various sources with uniform format
+#' @param dbs a list of gene sets to load
+#' returns a list of gene set databases
 #' @export
 load_gene_sets = function(dbs=c('gobp', 'gobp_nr', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'pathways')) {
   promise <- tibble::tribble(

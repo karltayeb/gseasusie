@@ -4,7 +4,7 @@
 \alias{convertGeneSet}
 \title{convert a geneSet tibble into a list of gene sets}
 \usage{
-convertGeneSet(geneSet, min.size = 100)
+convertGeneSet(geneSet, min.size = 1)
 }
 \arguments{
 \item{min.size}{the minimum size to retain a gene set

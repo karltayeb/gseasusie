@@ -48,18 +48,17 @@ prepare_data <- function(list, background, db) {
 #' @param enrichDatabase a database of genesets available in `WebGestaltR`, see `WebGestaltR::listGeneSet()`
 #' @returns a list with three items `$fit` `$data` and `$time`.
 #' @export
-fit_gsea_susie_webgestalt <- function(list, background, enrichDatabase = "geneontology_Biological_Process") {
+fit_gsea_susie_webgestalt <- function(list, background, enrichDatabase = "geneontology_Biological_Process", ...) {
   # load
   logistic_susie_gsea <- import_gsea_fun()
   gsdb <- WebGestaltR::loadGeneSet(enrichDatabase = enrichDatabase)
-  time <- tictoc::tic("Finding complementary enrichments in GO-BP...")
+  tictoc::tic()
   fit <- gsdb$geneSet %>%
     prepare_data(list, background, .) %>%
     {
-      list(fit = logistic_susie_gsea(.$X, .$y), data = .)
+      list(fit = logistic_susie_gsea(.$X, .$y, ...), data = .)
     }
-  tictoc::toc()
-  fit$time <- time
-  fit$data$X <- NULL
+  time <- tictoc::toc()
+  fit$time <- with(time, unname(toc - tic))
   return(fit)
 }

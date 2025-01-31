@@ -8,6 +8,10 @@ load_gene_sets(
   dbs = c("gobp", "gobp_nr", "c1", "c2", "c3", "c4", "c5", "c6", "pathways")
 )
 }
+\arguments{
+\item{dbs}{a list of gene sets to load
+returns a list of gene set databases}
+}
 \description{
 load gene sets from various sources with uniform format
 }
