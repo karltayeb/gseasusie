@@ -303,3 +303,15 @@ coerce_scores <- function(de, gs_background, from='ENSEMBL', to = 'ENTREZID'){
   de2 <- idmap %>% inner_join(de, by=join_by(from == ID))
   return(de2)
 }
+
+#' @export
+fit_gsea_gibbs <- function(X, y, L, prior_variance, maxiter){
+  proc <- basilisk::basiliskStart(gibss_env)
+  on.exit(basilisk::basiliskStop(proc))
+  fit <- basilisk::basiliskRun(proc, fun=function(X, y, L, prior_variance, maxiter) {
+    reticulate::source_python(paste0(find.package('gseasusie'), '/python/gsea_gibss.py'))
+    fit = gsea_gibss(X, y, L=L, prior_variance = 1, maxiter = 10, tol=1e-3)
+    fit
+  }, X=X, y=y, L=L, prior_variance=prior_variance, maxiter=maxiter)
+}
+# NOTE: when you install the package everything in `ints/` gets dumped into the main install directory!
