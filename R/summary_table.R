@@ -162,7 +162,7 @@ make_reactable <- function(cs_table) {
   )
   column_format$component <- componentColDef
   column_format$log2BF_SER <- componentlog2BFColDef
-  term2def <- purrr::map(cs_table$DEFINITION, ~ if_else(is.na(.x), "No definition found", .x))
+  term2def <- purrr::map(cs_table$DEFINITION, ~ dplyr::if_else(is.na(.x), "No definition found", .x))
   names(term2def) <- cs_table$geneSet
   column_format$geneSet <- reactable::colDef(cell = function(value) with_tooltip(value, term2def[[value]]))
 
@@ -173,4 +173,13 @@ make_reactable <- function(cs_table) {
     paginateSubRows = TRUE,
     defaultExpanded = TRUE
   )
+}
+
+#' @export
+make_gt_table <- function(cs_table) {
+  cs_table %>%
+    dplyr::group_by(component) %>%
+    dplyr::select(-c(log2BF_SER, DEFINITION)) %>%
+    gt::gt() %>%
+    gt::fmt_number(columns = c(propInList, log2OR, PIP, log2BF), decimals = 2)
 }

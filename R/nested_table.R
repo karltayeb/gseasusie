@@ -26,7 +26,7 @@ make_cs_tbl <- function(fit, min_lbf_ser = log(10.)) {
 
 make_component_tbl_single <- function(fit, l) {
   # component, gene set, alpha, beta, lbf, prior_variance
-  with(fit$fit, tibble(
+  with(fit$fit, tibble::tibble(
     component = glue::glue("L{l}"),
     geneSet = fit$data$geneSetMapping$geneSet,
     alpha = alpha[l, ],

@@ -5,16 +5,16 @@
 #' @export
 construct_geneset_matrix <- function(db) {
   tbl <- db %>%
-    mutate(
+    dplyr::mutate(
       geneSetIdx = vctrs::vec_group_id(geneSet),
       geneIdx = vctrs::vec_group_id(gene)
     )
   geneMapping <- tbl %>%
     dplyr::select(c(gene, geneIdx)) %>%
-    unique()
+    dplyr::distinct()
   geneSetMapping <- tbl %>%
     dplyr::select(c(geneSet, geneSetIdx)) %>%
-    unique()
+    dplyr::distinct()
   X <- tbl %>%
     {
       Matrix::sparseMatrix(.$geneIdx, .$geneSetIdx, x = 1.)
@@ -27,7 +27,10 @@ construct_geneset_matrix <- function(db) {
 
 #' make X and y for logistic SuSiE
 #' @export
-prepare_data <- function(list, background, db) {
+prepare_data_webgestalt <- function(list, background, db) {
+  if (is.character(db)) {
+    db <- WebGestaltR::loadGeneSet(enrichDatabase = db)$geneSet
+  }
   # get genes included in analysis, record which are excluded
   genes_in_analysis <- intersect(background, unique(db$gene))
   genes_excluded <- setdiff(background, genes_in_analysis)
@@ -36,7 +39,7 @@ prepare_data <- function(list, background, db) {
     dplyr::filter(gene %in% genes_in_analysis) %>%
     construct_geneset_matrix()
   X$geneSets <- X$geneSets %>%
-    mutate(geneInList = gene %in% list)
+    dplyr::mutate(geneInList = gene %in% list)
   # construct y
   y <- as.numeric(colnames(X$X) %in% list)
   return(c(X, list(y = y, included = genes_in_analysis, excluded = genes_excluded)))
@@ -54,7 +57,7 @@ fit_gsea_susie_webgestalt <- function(list, background, enrichDatabase = "geneon
   gsdb <- WebGestaltR::loadGeneSet(enrichDatabase = enrichDatabase)
   tictoc::tic()
   fit <- gsdb$geneSet %>%
-    prepare_data(list, background, .) %>%
+    prepare_data_webgestalt(list, background, .) %>%
     {
       list(fit = logistic_susie_gsea(.$X, .$y, ...), data = .)
     }
