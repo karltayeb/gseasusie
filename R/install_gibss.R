@@ -4,7 +4,7 @@ install_gibss <- function(..., envname = "r-gibss", new_env = identical(envname,
   if (new_env && virtualenv_exists(envname)) {
     virtualenv_remove(envname)
   }
-  py_install(packages = "gibss", envname = envname, python_version = "3.13", ...)
+  py_install(packages = "gibss", envname = envname, python_version = ">=3.11", ...)
 }
 
 #' @importFrom reticulate use_virtualenv
