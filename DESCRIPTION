@@ -1,6 +1,6 @@
 Package: gseasusie
 Title: GSEA with Multiple Regression
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: 
     person("Karl", "Tayeb", , "karl.tayeb7@gmail.com", role = c("aut", "cre"))
 Description: Package of functions implimenting various itererations of GSEA with multiple regression.
