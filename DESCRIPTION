@@ -14,13 +14,19 @@ Imports:
     BiocGenerics (>= 0.40.0),
     matrixStats (>= 0.61.0),
     WebGestaltR (>= 0.4.4),
-    magrittr (>= 2.0.0),
+    magrittr,
     susieR (>= 0.11.92),
     fastglm,
     ggplot2,
     tidyr,
     furrr,
-    basilisk
+    tictoc,
+    reactable,
+    gt,
+    tippy,
+    AnnotationDbi,
+    GO.db,
+    org.Hs.eg.db
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
