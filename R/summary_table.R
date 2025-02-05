@@ -2,6 +2,14 @@ logsumexp <- function(x) {
   log(sum(exp(x - max(x)))) + max(x)
 }
 
+select_db <- function(organism) {
+  switch(tolower(organism),
+    hsapiens = org.Hs.eg.db::org.Hs.eg.db,
+    mmusculus = org.Mm.eg.db::org.Mm.eg.db,
+    stop("Unsupported organism")
+  )
+}
+
 get_go_info <- function(fit) {
   AnnotationDbi::select(GO.db::GO.db,
     keys = unique(fit$data$geneSets$geneSet),
@@ -13,7 +21,8 @@ get_go_info <- function(fit) {
 }
 
 get_gene_info <- function(fit) {
-  AnnotationDbi::select(org.Hs.eg.db::org.Hs.eg.db,
+  db <- select_db(fit$organism)
+  AnnotationDbi::select(db,
     keys = unique(fit$data$geneMapping$gene),
     columns = c("SYMBOL", "GENETYPE", "GENENAME"),
     keytype = "ENTREZID"

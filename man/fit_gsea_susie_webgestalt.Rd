@@ -8,6 +8,7 @@ fit_gsea_susie_webgestalt(
   list,
   background,
   enrichDatabase = "geneontology_Biological_Process",
+  organism = "hsapiens",
   ...
 )
 }
