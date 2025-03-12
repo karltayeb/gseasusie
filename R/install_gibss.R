@@ -1,6 +1,5 @@
-#' @importFrom reticulate py_require
 .onLoad <- function(...) {
-  py_require("gibss")
+  reticulate::py_require("gibss")
 }
 
 import_gsea_fun <- function() {
