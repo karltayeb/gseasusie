@@ -26,7 +26,8 @@ Imports:
     tippy,
     AnnotationDbi,
     GO.db,
-    org.Hs.eg.db
+    org.Hs.eg.db,
+    reticulate (>= 1.41)
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
