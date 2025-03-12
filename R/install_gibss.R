@@ -1,15 +1,6 @@
-#' @importFrom reticulate py_install virtualenv_exists virtualenv_remove
-#' @export
-install_gibss <- function(..., envname = "r-gibss", new_env = identical(envname, "r-gibss")) {
-  if (new_env && virtualenv_exists(envname)) {
-    virtualenv_remove(envname)
-  }
-  py_install(packages = "gibss", envname = envname, python_version = ">=3.11", ...)
-}
-
-#' @importFrom reticulate use_virtualenv
+#' @importFrom reticulate py_require
 .onLoad <- function(...) {
-  use_virtualenv("r-gibss", require = F)
+  py_require("gibss")
 }
 
 import_gsea_fun <- function() {
