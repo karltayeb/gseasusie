@@ -1,14 +1,14 @@
 Package: gseasusie
-Title: GSEA with Multiple Regression
+Title: Gene Set Enrichment Analysis with Multiple Regression
 Version: 0.1.0.9000
-Authors@R: 
-    person("Karl", "Tayeb", , "karl.tayeb7@gmail.com", role = c("aut", "cre"))
-Description: Package of functions implimenting various itererations of GSEA with multiple regression.
+Date: 2025-02-27
+Authors@R: person("Karl","Tayeb",email="karl.tayeb7@gmail.com",
+                  role=c("aut","cre"))
+URL: https://github.com/karltayeb/gseasusie
+BugReports: https://github.com/karltayeb/gseasusie/issues
+Description: Implements a new way to perform gene set enrichment analysis
+    using multiple regression.
 License: MIT + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
-biocViews:
 Imports:
     modules (>= 0.10.0),
     BiocGenerics (>= 0.40.0),
@@ -30,4 +30,9 @@ Imports:
     reticulate (>= 1.41)
 Suggests: 
     testthat (>= 3.0.0)
+LazyData: true
+LazyDataCompression: xz
+NeedsCompilation: no
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
 Config/testthat/edition: 3
